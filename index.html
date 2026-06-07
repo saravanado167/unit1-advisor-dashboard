@@ -388,16 +388,10 @@ function confirm2(msg,onOk){document.getElementById('confirm-msg').textContent=m
 // Safe Excel download — no filename prompt, no corruption
 function downloadXLSX(wb,filename){
   try{
-    const out=XLSX.write(wb,{bookType:'xlsx',type:'array'});
-    const blob=new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
-    const url=URL.createObjectURL(blob);
-    const a=document.createElement('a');
-    a.href=url;a.download=filename;
-    document.body.appendChild(a);a.click();
-    setTimeout(()=>{URL.revokeObjectURL(url);a.remove()},2000);
+    XLSX.writeFile(wb,filename);
+    showToast('Downloaded: '+filename);
   }catch(e){showToast('Export error: '+e.message)}
 }
-
 // ===================== NAV =====================
 let currentPage='home';
 function showPage(page){
