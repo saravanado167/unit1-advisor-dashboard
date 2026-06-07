@@ -478,15 +478,29 @@ body {
     <div class="sort-tab" onclick="setReportTab('monthly',this)">Monthly Summary</div>
     <div class="sort-tab" onclick="setReportTab('advisor',this)">Advisor-wise</div>
   </div>
-  <div class="filter-row">
-    <select class="form-control" id="filter-advisor" onchange="renderReports()" style="flex:1;min-width:120px">
+  <div class="filter-row" style="flex-direction:column;gap:8px">
+    <select class="form-control" id="filter-advisor" onchange="renderReports()">
       <option value="">All Advisors</option>
     </select>
-    <input type="date" class="form-control" id="filter-date" onchange="renderReports()" style="flex:1;min-width:120px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div>
+        <div style="font-size:11px;font-weight:600;color:var(--text-mid);margin-bottom:3px">From Date</div>
+        <input type="date" class="form-control" id="filter-date-from" onchange="renderReports()">
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;color:var(--text-mid);margin-bottom:3px">To Date</div>
+        <input type="date" class="form-control" id="filter-date-to" onchange="renderReports()">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline btn-sm" onclick="clearDateFilter()" style="flex:1">Clear Filter</button>
+      <button class="btn btn-primary btn-sm" onclick="setThisMonth()" style="flex:1">This Month</button>
+      <button class="btn btn-yellow btn-sm" onclick="setToday()" style="flex:1">Today</button>
+    </div>
   </div>
-  <button class="btn btn-outline btn-sm" onclick="exportReport()" style="margin-bottom:12px">
+  <button class="btn btn-success btn-block" onclick="exportReport()" style="margin-bottom:12px;margin-top:4px">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-    Export Report Excel
+    Export Report Excel (Date-wise Columns)
   </button>
   <div id="report-content"></div>
 </div>
@@ -1341,6 +1355,7 @@ function renderMonthly() {
 
 // ===================== REPORTS =====================
 let reportTab = 'daily';
+
 function setReportTab(tab, el) {
   reportTab = tab;
   document.querySelectorAll('#page-reports .sort-tab').forEach(t=>t.classList.remove('active'));
@@ -1348,17 +1363,53 @@ function setReportTab(tab, el) {
   renderReports();
 }
 
+// Date filter helpers
+function getFilteredDates() {
+  const from = document.getElementById('filter-date-from').value;
+  const to   = document.getElementById('filter-date-to').value;
+  return { from, to };
+}
+
+function filterUpdates() {
+  const filterAdv  = document.getElementById('filter-advisor').value;
+  const { from, to } = getFilteredDates();
+  let updates = getUpdates();
+  if(filterAdv) updates = updates.filter(u => u.code === filterAdv);
+  if(from) updates = updates.filter(u => u.timestamp.split('T')[0] >= from);
+  if(to)   updates = updates.filter(u => u.timestamp.split('T')[0] <= to);
+  return updates;
+}
+
+function clearDateFilter() {
+  document.getElementById('filter-date-from').value = '';
+  document.getElementById('filter-date-to').value   = '';
+  renderReports();
+}
+
+function setToday() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('filter-date-from').value = today;
+  document.getElementById('filter-date-to').value   = today;
+  renderReports();
+}
+
+function setThisMonth() {
+  const now  = new Date();
+  const y    = now.getFullYear();
+  const m    = String(now.getMonth()+1).padStart(2,'0');
+  const last = new Date(y, now.getMonth()+1, 0).getDate();
+  document.getElementById('filter-date-from').value = `${y}-${m}-01`;
+  document.getElementById('filter-date-to').value   = `${y}-${m}-${String(last).padStart(2,'0')}`;
+  renderReports();
+}
+
 function renderReports() {
   populateFilterAdvisor();
-  const filterAdv = document.getElementById('filter-advisor').value;
-  const filterDate = document.getElementById('filter-date').value;
-  let updates = getUpdates();
-  if(filterAdv) updates = updates.filter(u=>u.code===filterAdv);
-  if(filterDate) updates = updates.filter(u=>u.timestamp.startsWith(filterDate));
-
+  const updates = filterUpdates();
   const el = document.getElementById('report-content');
-  if(reportTab==='daily') {
-    if(!updates.length) { el.innerHTML='<div class="empty-state"><p>No updates found.</p></div>'; return; }
+
+  if(reportTab === 'daily') {
+    if(!updates.length) { el.innerHTML='<div class="empty-state"><p>No updates found for selected range.</p></div>'; return; }
     const byDate = {};
     updates.forEach(u=>{ const d=u.timestamp.split('T')[0]; if(!byDate[d]) byDate[d]=[]; byDate[d].push(u); });
     el.innerHTML = Object.keys(byDate).sort().reverse().map(d=>`
@@ -1366,29 +1417,41 @@ function renderReports() {
         <div class="section-head" style="font-size:14px">${formatDateLabel(d)}</div>
         ${byDate[d].map(u=>`
           <div class="report-row">
-            <div><div style="font-weight:600;font-size:13px">${u.name}</div><div style="font-size:11px;color:var(--text-light)">${u.code}</div></div>
-            <div style="text-align:right"><div style="font-size:12px;font-weight:600">NOP: ${u.nop}</div><div style="font-size:11px;color:var(--text-light)">₹${fmt(u.premium)}</div></div>
+            <div>
+              <div style="font-weight:600;font-size:13px">${u.name}</div>
+              <div style="font-size:11px;color:var(--text-light)">${u.code}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:12px;font-weight:600">NOP: ${u.nop}</div>
+              <div style="font-size:11px;color:var(--text-light)">₹${fmt(u.premium)}</div>
+            </div>
           </div>`).join('')}
-        <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:12px;font-weight:700">
-          <span>Total</span>
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--lic-blue)">
+          <span>Day Total</span>
           <span>NOP: ${byDate[d].reduce((s,u)=>s+u.nop,0)} | ₹${fmt(byDate[d].reduce((s,u)=>s+u.premium,0))}</span>
         </div>
       </div>`).join('');
 
-  } else if(reportTab==='monthly') {
+  } else if(reportTab === 'monthly') {
     const advisors = getAdvisors();
     el.innerHTML = `<div class="card">
       <div class="section-head" style="font-size:14px">Monthly Summary</div>
       ${advisors.map(a=>`<div class="report-row">
-        <div><div style="font-weight:600;font-size:13px">${a.name}</div><div style="font-size:11px;color:var(--text-light)">${a.code}</div></div>
-        <div style="text-align:right"><div style="font-size:12px;font-weight:600">${fmt(a.currentNOP||0)} / ${fmt(a.nopTarget||0)}</div><div style="font-size:11px;color:var(--text-light)">₹${fmt(a.currentPremium||0)}</div></div>
+        <div>
+          <div style="font-weight:600;font-size:13px">${a.name}</div>
+          <div style="font-size:11px;color:var(--text-light)">${a.code}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:12px;font-weight:600">${fmt(a.currentNOP||0)} / ${fmt(a.nopTarget||0)} NOP</div>
+          <div style="font-size:11px;color:var(--text-light)">₹${fmt(a.currentPremium||0)}</div>
+        </div>
       </div>`).join('')}
     </div>`;
 
-  } else if(reportTab==='advisor') {
-    if(!updates.length) { el.innerHTML='<div class="empty-state"><p>No updates found.</p></div>'; return; }
+  } else if(reportTab === 'advisor') {
+    if(!updates.length) { el.innerHTML='<div class="empty-state"><p>No updates found for selected range.</p></div>'; return; }
     const byAdv = {};
-    updates.forEach(u=>{ if(!byAdv[u.code]) byAdv[u.code]={name:u.name,updates:[]}; byAdv[u.code].updates.push(u); });
+    updates.forEach(u=>{ if(!byAdv[u.code]) byAdv[u.code]={name:u.name,whatsapp:u.whatsapp,updates:[]}; byAdv[u.code].updates.push(u); });
     el.innerHTML = Object.values(byAdv).map(a=>`
       <div class="card">
         <div class="section-head" style="font-size:14px">${a.name}</div>
@@ -1396,7 +1459,7 @@ function renderReports() {
           <span style="font-size:12px">${formatDateLabel(u.timestamp.split('T')[0])}</span>
           <span style="font-size:12px;font-weight:600">NOP: ${u.nop} | ₹${fmt(u.premium)}</span>
         </div>`).join('')}
-        <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:12px;font-weight:700">
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--lic-blue)">
           <span>Total</span>
           <span>NOP: ${a.updates.reduce((s,u)=>s+u.nop,0)} | ₹${fmt(a.updates.reduce((s,u)=>s+u.premium,0))}</span>
         </div>
@@ -1408,37 +1471,172 @@ function populateFilterAdvisor() {
   const sel = document.getElementById('filter-advisor');
   const cur = sel.value;
   const advisors = getAdvisors();
-  sel.innerHTML = '<option value="">All Advisors</option>' + advisors.map(a=>`<option value="${a.code}" ${cur===a.code?'selected':''}>${a.name}</option>`).join('');
+  sel.innerHTML = '<option value="">All Advisors</option>' +
+    advisors.map(a=>`<option value="${a.code}" ${cur===a.code?'selected':''}>${a.name}</option>`).join('');
 }
 
 function formatDateLabel(d) {
   return new Date(d+'T12:00:00').toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 }
 
+// ---- short date like "01-Jun-26"
+function shortDate(d) {
+  const dt = new Date(d + 'T12:00:00');
+  const dd = String(dt.getDate()).padStart(2,'0');
+  const mon = dt.toLocaleString('en-IN',{month:'short'});
+  const yy  = String(dt.getFullYear()).slice(2);
+  return `${dd}-${mon}-${yy}`;
+}
+
+// ---- Excel filename from filter dates
+function buildExcelFilename() {
+  const { from, to } = getFilteredDates();
+  if(from && to && from !== to) {
+    return `Performance_${shortDate(from)}_to_${shortDate(to)}.xlsx`;
+  } else if(from && to && from === to) {
+    return `Performance_${shortDate(from)}.xlsx`;
+  } else if(from) {
+    return `Performance_from_${shortDate(from)}.xlsx`;
+  } else if(to) {
+    return `Performance_upto_${shortDate(to)}.xlsx`;
+  }
+  // no filter — use current month range label
+  const now = new Date();
+  const y   = now.getFullYear();
+  const m   = String(now.getMonth()+1).padStart(2,'0');
+  const mon = now.toLocaleString('en-IN',{month:'short'});
+  const yy  = String(y).slice(2);
+  return `Performance_01-${String(new Date(y,now.getMonth()+1,0).getDate()).padStart(2,'0')}-${mon}-${yy}.xlsx`;
+}
+
+// ---- Main export: pivot table — advisor rows × date columns
 function exportReport() {
-  let updates = getUpdates();
-  const filterAdv = document.getElementById('filter-advisor').value;
-  const filterDate = document.getElementById('filter-date').value;
-  if(filterAdv) updates = updates.filter(u=>u.code===filterAdv);
-  if(filterDate) updates = updates.filter(u=>u.timestamp.startsWith(filterDate));
-  if(!updates.length) { showToast('No data to export'); return; }
-  const data = updates.map(u=>({
-    'Date': u.timestamp.split('T')[0],
-    'Time': new Date(u.timestamp).toLocaleTimeString('en-IN'),
-    'Agency Code': u.code,
-    'Advisor Name': u.name,
-    'Today NOP': u.nop,
-    'Today Premium': u.premium,
-    'Total NOP': u.totalNOP,
-    'Total Premium': u.totalPremium,
-    'NOP Target': u.nopTarget,
-    'Premium Target': u.premiumTarget
-  }));
-  const ws = XLSX.utils.json_to_sheet(data);
+  const updates = filterUpdates();
+  if(!updates.length) { showToast('No data to export for selected range'); return; }
+
+  // Gather all unique dates sorted
+  const dateSet = new Set(updates.map(u => u.timestamp.split('T')[0]));
+  const dates   = [...dateSet].sort();
+
+  // Gather all unique advisors (by code), keep order by name
+  const advMap = {};
+  updates.forEach(u => {
+    if(!advMap[u.code]) advMap[u.code] = { code:u.code, name:u.name, whatsapp:u.whatsapp||u.mobile||'' };
+  });
+
+  // Also include all advisors from DB for complete picture
+  getAdvisors().forEach(a => {
+    if(!advMap[a.code]) advMap[a.code] = { code:a.code, name:a.name, whatsapp:a.whatsapp||a.mobile||'' };
+  });
+
+  const advisorList = Object.values(advMap).sort((a,b)=>a.name.localeCompare(b.name));
+
+  // Build pivot: for each advisor × each date, sum NOP
+  const pivot = {}; // pivot[code][date] = { nop, premium }
+  updates.forEach(u => {
+    const d = u.timestamp.split('T')[0];
+    if(!pivot[u.code]) pivot[u.code] = {};
+    if(!pivot[u.code][d]) pivot[u.code][d] = { nop:0, premium:0 };
+    pivot[u.code][d].nop     += (u.nop||0);
+    pivot[u.code][d].premium += (u.premium||0);
+  });
+
+  // Build worksheet data array
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, 'Report', ws);
-  XLSX.writeFile(wb, 'Unit1_Report.xlsx');
-  showToast('Report exported!');
+
+  // ── Sheet 1: NOP pivot ──────────────────────────────────────
+  const nopHeader = ['S.No', 'Agency Code', 'Advisor Name', ...dates.map(shortDate), 'Total NOP', 'WhatsApp Link'];
+  const nopRows   = [nopHeader];
+
+  advisorList.forEach((adv, idx) => {
+    const row = [
+      idx + 1,
+      adv.code,
+      adv.name,
+      ...dates.map(d => (pivot[adv.code]?.[d]?.nop || 0)),
+    ];
+    const total = dates.reduce((s,d)=> s + (pivot[adv.code]?.[d]?.nop||0), 0);
+    row.push(total);
+    const waNum = '91' + (adv.whatsapp||'').replace(/\D/g,'');
+    row.push(total > 0 ? `https://wa.me/${waNum}` : '');
+    nopRows.push(row);
+  });
+
+  // Totals row
+  const nopTotals = ['', '', 'TOTAL',
+    ...dates.map(d => updates.filter(u=>u.timestamp.startsWith(d)).reduce((s,u)=>s+(u.nop||0),0)),
+    updates.reduce((s,u)=>s+(u.nop||0),0),
+    ''
+  ];
+  nopRows.push(nopTotals);
+
+  const ws1 = XLSX.utils.aoa_to_sheet(nopRows);
+
+  // Style column widths
+  ws1['!cols'] = [
+    {wch:5},{wch:14},{wch:24},
+    ...dates.map(()=>({wch:10})),
+    {wch:11},{wch:38}
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws1, 'NOP Report');
+
+  // ── Sheet 2: Premium pivot ──────────────────────────────────
+  const premHeader = ['S.No', 'Agency Code', 'Advisor Name', ...dates.map(shortDate), 'Total Premium (₹)', 'WhatsApp Link'];
+  const premRows   = [premHeader];
+
+  advisorList.forEach((adv, idx) => {
+    const row = [
+      idx + 1,
+      adv.code,
+      adv.name,
+      ...dates.map(d => (pivot[adv.code]?.[d]?.premium || 0)),
+    ];
+    const total = dates.reduce((s,d)=> s + (pivot[adv.code]?.[d]?.premium||0), 0);
+    row.push(total);
+    const waNum = '91' + (adv.whatsapp||'').replace(/\D/g,'');
+    row.push(total > 0 ? `https://wa.me/${waNum}` : '');
+    premRows.push(row);
+  });
+
+  const premTotals = ['', '', 'TOTAL',
+    ...dates.map(d => updates.filter(u=>u.timestamp.startsWith(d)).reduce((s,u)=>s+(u.premium||0),0)),
+    updates.reduce((s,u)=>s+(u.premium||0),0),
+    ''
+  ];
+  premRows.push(premTotals);
+
+  const ws2 = XLSX.utils.aoa_to_sheet(premRows);
+  ws2['!cols'] = [
+    {wch:5},{wch:14},{wch:24},
+    ...dates.map(()=>({wch:12})),
+    {wch:18},{wch:38}
+  ];
+  XLSX.utils.book_append_sheet(wb, ws2, 'Premium Report');
+
+  // ── Sheet 3: Combined detail ────────────────────────────────
+  const detailHeader = ['S.No','Date','Agency Code','Advisor Name','NOP','Premium (₹)','Total NOP','Total Premium','NOP Target','Premium Target','WhatsApp Link'];
+  const detailRows   = [detailHeader];
+  const sorted = [...updates].sort((a,b)=>a.timestamp.localeCompare(b.timestamp));
+  sorted.forEach((u,i)=>{
+    const waNum = '91' + (u.whatsapp||'').replace(/\D/g,'');
+    detailRows.push([
+      i+1,
+      u.timestamp.split('T')[0],
+      u.code, u.name,
+      u.nop||0, u.premium||0,
+      u.totalNOP||0, u.totalPremium||0,
+      u.nopTarget||0, u.premiumTarget||0,
+      `https://wa.me/${waNum}`
+    ]);
+  });
+  const ws3 = XLSX.utils.aoa_to_sheet(detailRows);
+  ws3['!cols'] = [{wch:5},{wch:12},{wch:14},{wch:24},{wch:6},{wch:14},{wch:11},{wch:16},{wch:11},{wch:16},{wch:38}];
+  XLSX.utils.book_append_sheet(wb, ws3, 'Detail Log');
+
+  const filename = buildExcelFilename();
+  XLSX.writeFile(wb, filename);
+  showToast(`Exported: ${filename}`);
 }
 
 // ===================== SETTINGS =====================
@@ -1487,9 +1685,6 @@ function clearAllData() {
 // ===================== INIT =====================
 document.addEventListener('DOMContentLoaded', ()=>{
   renderHome();
-  // Set today's date as default for filter
-  const today = new Date().toISOString().split('T')[0];
-  if(document.getElementById('filter-date')) document.getElementById('filter-date').value='';
 });
 </script>
 </body>
