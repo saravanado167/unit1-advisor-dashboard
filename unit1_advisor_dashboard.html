@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Unit-1 Advisor Dashboard</title>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+<style>
+:root{--blue:#003f91;--yellow:#ffc400;--bg:#f3f6ff;--card:#fff;--text:#14213d;--muted:#667085;--red:#d93025;--green:#188038;--border:#d8dfef}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+header{background:linear-gradient(135deg,var(--blue),#0b63ce);color:white;padding:16px 14px;text-align:center;font-size:21px;font-weight:800;letter-spacing:.2px;position:sticky;top:0;z-index:10}
+main{padding:12px 12px 82px;max-width:1200px;margin:auto}.card{background:var(--card);border:1px solid var(--border);border-radius:16px;margin:12px 0;padding:14px;box-shadow:0 4px 16px #16366b14}.card h2,.card h3{margin:5px 0 12px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.stat{border-radius:14px;background:#eef4ff;border:1px solid #d9e7ff;padding:12px;text-align:center;font-weight:700}.stat b{font-size:22px;color:var(--blue)}
+input,select,textarea,button{width:100%;padding:11px;margin:6px 0;border-radius:10px;border:1px solid #c7d0e0;font-size:15px}textarea{min-height:72px}button{border:none;background:var(--blue);color:white;font-weight:800;cursor:pointer}button:active{transform:scale(.99)}.btn-row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.btn-small{padding:8px 9px;font-size:12px;margin:3px 0}.yellow{background:var(--yellow);color:#111}.red{background:var(--red)}.green{background:var(--green)}.gray{background:#596579}.outline{background:white;color:var(--blue);border:1px solid var(--blue)}
+.hidden{display:none!important}.muted{color:var(--muted);font-size:12px}.pill{display:inline-block;border-radius:99px;padding:4px 8px;font-size:12px;font-weight:700}.active{background:#dcfce7;color:#166534}.inactive{background:#fee2e2;color:#991b1b}table{width:100%;border-collapse:collapse;font-size:13px}th,td{border:1px solid #d6dce8;padding:8px;text-align:left;vertical-align:top}th{background:var(--blue);color:white;position:sticky;top:54px}.table-wrap{overflow:auto;border-radius:12px}.actions{min-width:160px}.nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(6,1fr);gap:3px;padding:7px;z-index:20}.nav button{font-size:11px;padding:9px 3px;margin:0;border-radius:9px;background:#eff4ff;color:var(--blue)}.nav button.on{background:var(--blue);color:white}.modal-bg{position:fixed;inset:0;background:#0007;z-index:100;display:flex;align-items:center;justify-content:center;padding:12px}.modal{background:white;border-radius:18px;padding:15px;max-width:540px;width:100%;max-height:90vh;overflow:auto}.progress{height:17px;background:#e5e7eb;border-radius:50px;overflow:hidden}.bar{height:100%;background:var(--blue);color:#fff;text-align:center;font-size:11px;line-height:17px}.topline{display:flex;justify-content:space-between;gap:10px;align-items:center}.logo{font-size:12px;background:var(--yellow);color:#111;padding:4px 9px;border-radius:99px;font-weight:900}
+@media(min-width:800px){.grid{grid-template-columns:repeat(5,1fr)}.form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.btn-row{grid-template-columns:repeat(4,1fr)}.nav{max-width:900px;left:50%;transform:translateX(-50%);border-radius:18px 18px 0 0}}
+</style>
+</head>
+<body>
+<header><div class="topline"><span>Unit-1 Advisor Dashboard</span><span class="logo">LIC</span></div></header>
+<main>
+<section id="dashboard" class="page">
+ <div class="card"><h2>Dashboard</h2><div class="grid">
+  <div class="stat">Total Advisors<br><b id="dTotal">0</b></div><div class="stat">Active<br><b id="dActive">0</b></div><div class="stat">Monthly NOP<br><b id="dNOP">0</b></div><div class="stat">Premium<br><b id="dPremium">₹0</b></div><div class="stat">Today Updates<br><b id="dToday">0</b></div>
+ </div></div>
+ <div class="card"><h3>Quick Actions</h3><div class="btn-row"><button onclick="showPage('advisors')">Add / View Advisors</button><button class="yellow" onclick="document.getElementById('excelFile').click()">Import Excel</button><button class="green" onclick="exportExcel()">Export Excel</button><button class="gray" onclick="showPage('monthly')">Monthly Ranking</button></div><input id="excelFile" class="hidden" type="file" accept=".xlsx,.xls,.csv" onchange="importExcel(event)"><p class="muted">Excel columns supported: Agency Code, Advisor Name, Mobile Number, WhatsApp Number, NOP Target, Premium Target, Branch Name, Status.</p></div>
+ <div class="card"><h3>Top Summary</h3><p id="topSummary" class="muted">No data yet.</p></div>
+</section>
+
+<section id="advisors" class="page hidden">
+ <div class="card"><h2>Advisor Database</h2><input id="searchBox" placeholder="Search by agency code, name or mobile" oninput="renderAdvisors()"><button onclick="openAdvisorForm()">+ Add Advisor</button></div>
+ <div class="card table-wrap"><table><thead><tr><th>Code</th><th>Name</th><th>Mobile</th><th>Targets</th><th>Achievement</th><th>Status</th><th>Actions</th></tr></thead><tbody id="advisorRows"></tbody></table></div>
+</section>
+
+<section id="today" class="page hidden">
+ <div class="card"><h2>Today's Update</h2><p class="muted">Version 1A: manual update. OCR image reading will be added in Version 1B.</p><select id="todayAdvisor"></select><input id="todayNOP" type="number" placeholder="Policies completed today"><input id="todayPremium" type="number" placeholder="Premium today"><textarea id="todayNote" placeholder="Notes"></textarea><button onclick="saveTodayUpdate()">Save Today's Update</button></div>
+ <div class="card table-wrap"><h3>Today Updates</h3><table><thead><tr><th>Code</th><th>Name</th><th>NOP</th><th>Premium</th><th>WhatsApp</th></tr></thead><tbody id="todayRows"></tbody></table></div>
+</section>
+
+<section id="monthly" class="page hidden">
+ <div class="card"><h2>Monthly Performance</h2><div class="btn-row"><button onclick="sortMode='nop';renderMonthly()">Sort by NOP</button><button class="yellow" onclick="sortMode='premium';renderMonthly()">Sort by Premium</button></div><p id="monthlyStats" class="muted"></p></div>
+ <div class="card table-wrap"><table><thead><tr><th>Rank</th><th>Code</th><th>Name</th><th>NOP</th><th>Premium</th><th>Progress</th></tr></thead><tbody id="monthlyRows"></tbody></table></div>
+</section>
+
+<section id="reports" class="page hidden">
+ <div class="card"><h2>Reports</h2><button onclick="generateReport()">Generate Advisor-wise Summary</button><button class="green" onclick="exportExcel()">Export Advisor Database</button><textarea id="reportBox" readonly placeholder="Report will appear here"></textarea></div>
+</section>
+
+<section id="settings" class="page hidden">
+ <div class="card"><h2>Settings</h2><button onclick="backupData()">Backup Data</button><textarea id="backupBox" placeholder="Backup / restore data appears here"></textarea><button class="yellow" onclick="restoreData()">Restore From Box</button><button class="red" onclick="clearAll()">Clear Full Database</button><p class="muted">This app uses your browser local storage. For GitHub Pages, data remains on the same browser/device.</p></div>
+</section>
+</main>
+
+<div class="nav"><button id="nav-dashboard" class="on" onclick="showPage('dashboard')">Home</button><button id="nav-advisors" onclick="showPage('advisors')">Advisors</button><button id="nav-today" onclick="showPage('today')">Today</button><button id="nav-monthly" onclick="showPage('monthly')">Monthly</button><button id="nav-reports" onclick="showPage('reports')">Reports</button><button id="nav-settings" onclick="showPage('settings')">Settings</button></div>
+
+<div id="modalBg" class="modal-bg hidden"><div class="modal"><h3 id="modalTitle">Advisor</h3><input id="mCode" placeholder="Agency Code"><input id="mName" placeholder="Advisor Name"><input id="mMobile" placeholder="Mobile Number"><input id="mWhatsapp" placeholder="WhatsApp Number"><input id="mBranch" placeholder="Branch Name"><select id="mStatus"><option>Active</option><option>Inactive</option></select><input id="mNopTarget" type="number" placeholder="Monthly NOP Target"><input id="mPremiumTarget" type="number" placeholder="Monthly Premium Target"><input id="mCurrentNop" type="number" placeholder="Current NOP"><input id="mCurrentPremium" type="number" placeholder="Current Premium"><div class="btn-row"><button onclick="saveAdvisorForm()">Save</button><button class="gray" onclick="closeModal()">Cancel</button></div></div></div>
+
+<script>
+const KEY='unit1_advisor_dashboard_v1a';
+let db=JSON.parse(localStorage.getItem(KEY)||'{"advisors":[],"updates":[]}');
+let editIndex=null;let sortMode='nop';
+function persist(){localStorage.setItem(KEY,JSON.stringify(db));renderAll()}
+function money(n){return '₹'+Number(n||0).toLocaleString('en-IN')}
+function todayStr(){return new Date().toISOString().slice(0,10)}
+function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.add('hidden'));document.getElementById(id).classList.remove('hidden');document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('on'));document.getElementById('nav-'+id).classList.add('on');renderAll()}
+function renderAll(){renderDashboard();renderAdvisors();renderToday();renderMonthly();fillAdvisorSelect()}
+function renderDashboard(){let a=db.advisors;dTotal.textContent=a.length;dActive.textContent=a.filter(x=>(x.status||'Active')==='Active').length;dNOP.textContent=a.reduce((s,x)=>s+Number(x.currentNop||0),0);dPremium.textContent=money(a.reduce((s,x)=>s+Number(x.currentPremium||0),0));dToday.textContent=db.updates.filter(u=>u.date===todayStr()).length;let top=[...a].sort((x,y)=>Number(y.currentNop||0)-Number(x.currentNop||0))[0];topSummary.textContent=top?`Top NOP Performer: ${top.name} (${top.code}) - ${top.currentNop||0} policies, Premium ${money(top.currentPremium)}`:'No advisors added yet.'}
+function openAdvisorForm(i=null,mode='edit'){editIndex=i;modalTitle.textContent=i===null?'Add Advisor':(mode==='modify'?'Modify Achievement':'Edit Advisor');let a=i===null?{}:db.advisors[i];mCode.value=a.code||'';mName.value=a.name||'';mMobile.value=a.mobile||'';mWhatsapp.value=a.whatsapp||'';mBranch.value=a.branch||'';mStatus.value=a.status||'Active';mNopTarget.value=a.nopTarget||'';mPremiumTarget.value=a.premiumTarget||'';mCurrentNop.value=a.currentNop||'';mCurrentPremium.value=a.currentPremium||'';modalBg.classList.remove('hidden')}
+function closeModal(){modalBg.classList.add('hidden')}
+function saveAdvisorForm(){let obj={code:mCode.value.trim(),name:mName.value.trim(),mobile:mMobile.value.trim(),whatsapp:mWhatsapp.value.trim()||mMobile.value.trim(),branch:mBranch.value.trim(),status:mStatus.value,nopTarget:Number(mNopTarget.value||0),premiumTarget:Number(mPremiumTarget.value||0),currentNop:Number(mCurrentNop.value||0),currentPremium:Number(mCurrentPremium.value||0)};if(!obj.code||!obj.name){alert('Agency Code and Advisor Name required');return}if(editIndex===null)db.advisors.push(obj);else db.advisors[editIndex]=obj;closeModal();persist()}
+function renderAdvisors(){let q=(searchBox?.value||'').toLowerCase();advisorRows.innerHTML='';db.advisors.forEach((a,i)=>{if(q && !(`${a.code} ${a.name} ${a.mobile}`.toLowerCase().includes(q)))return;let pct=a.nopTarget?Math.round((Number(a.currentNop||0)/Number(a.nopTarget))*100):0;advisorRows.innerHTML+=`<tr><td>${a.code}</td><td><b>${a.name}</b><br><span class="muted">${a.branch||''}</span></td><td><a href="tel:${a.mobile}">${a.mobile||''}</a><br>WA: ${a.whatsapp||''}</td><td>NOP: ${a.nopTarget||0}<br>Premium: ${money(a.premiumTarget)}</td><td>NOP: ${a.currentNop||0}<br>Premium: ${money(a.currentPremium)}<div class="progress"><div class="bar" style="width:${Math.min(pct,100)}%">${pct}%</div></div></td><td><span class="pill ${(a.status||'Active')==='Active'?'active':'inactive'}">${a.status||'Active'}</span></td><td class="actions"><button class="btn-small" onclick="openAdvisorForm(${i},'edit')">✏ Edit</button><button class="btn-small yellow" onclick="openAdvisorForm(${i},'modify')">⚙ Modify</button><button class="btn-small red" onclick="deleteAdvisor(${i})">🗑 Delete</button></td></tr>`})}
+function deleteAdvisor(i){if(confirm('Are you sure you want to delete this advisor?')){db.advisors.splice(i,1);persist()}}
+function fillAdvisorSelect(){todayAdvisor.innerHTML='<option value="">Select Advisor</option>'+db.advisors.map((a,i)=>`<option value="${i}">${a.code} - ${a.name}</option>`).join('')}
+function saveTodayUpdate(){let i=todayAdvisor.value;if(i===''){alert('Select advisor');return}let a=db.advisors[i], nop=Number(todayNOP.value||0), prem=Number(todayPremium.value||0);a.currentNop=Number(a.currentNop||0)+nop;a.currentPremium=Number(a.currentPremium||0)+prem;db.updates.push({date:todayStr(),code:a.code,name:a.name,nop,premium:prem,note:todayNote.value,whatsapp:a.whatsapp});todayNOP.value=todayPremium.value=todayNote.value='';persist();alert('Today update saved')}
+function renderToday(){todayRows.innerHTML='';db.updates.filter(u=>u.date===todayStr()).forEach(u=>{let msg=encodeURIComponent(`Congratulations ${u.name}.\n\nToday's Achievement:\nPolicies Completed: ${u.nop}\nPremium: ${money(u.premium)}\n\nKeep up the excellent work.\n\nBest Wishes,\nB. Saravana Kumar\nDevelopment Officer\nLIC of India`);todayRows.innerHTML+=`<tr><td>${u.code}</td><td>${u.name}</td><td>${u.nop}</td><td>${money(u.premium)}</td><td><a target="_blank" href="https://wa.me/91${u.whatsapp}?text=${msg}">Send</a></td></tr>`})}
+function renderMonthly(){let list=[...db.advisors].sort((a,b)=>sortMode==='premium'?Number(b.currentPremium||0)-Number(a.currentPremium||0):Number(b.currentNop||0)-Number(a.currentNop||0));monthlyRows.innerHTML='';list.forEach((a,i)=>{let pct=a.nopTarget?Math.round((Number(a.currentNop||0)/Number(a.nopTarget))*100):0;monthlyRows.innerHTML+=`<tr><td>${i+1}</td><td>${a.code}</td><td>${a.name}</td><td>${a.currentNop||0}/${a.nopTarget||0}</td><td>${money(a.currentPremium)} / ${money(a.premiumTarget)}</td><td><div class="progress"><div class="bar" style="width:${Math.min(pct,100)}%">${pct}%</div></div></td></tr>`});let topN=list[0];monthlyStats.textContent=topN?`Sorting by ${sortMode.toUpperCase()}. Top: ${topN.name}`:'No data yet.'}
+function generateReport(){let lines=['UNIT-1 ADVISOR DASHBOARD REPORT',new Date().toLocaleString(),''];db.advisors.forEach(a=>{let bal=Math.max(Number(a.nopTarget||0)-Number(a.currentNop||0),0);let pct=a.nopTarget?Math.round(a.currentNop/a.nopTarget*100):0;lines.push(`${a.name} (${a.code})\nNOP Target: ${a.nopTarget||0}\nCompleted: ${a.currentNop||0}\nBalance: ${bal}\nPremium: ${money(a.currentPremium)}\nAchievement: ${pct}%\n`) });reportBox.value=lines.join('\n')}
+function importExcel(e){let file=e.target.files[0];if(!file)return;let reader=new FileReader();reader.onload=function(ev){let wb=XLSX.read(ev.target.result,{type:'binary'});let ws=wb.Sheets[wb.SheetNames[0]];let rows=XLSX.utils.sheet_to_json(ws,{defval:''});let added=0;rows.forEach(r=>{let code=r['Agency Code']||r['Code']||r['agency code'];let name=r['Advisor Name']||r['Name']||r['advisor name'];if(!code||!name)return;db.advisors.push({code:String(code),name:String(name),mobile:String(r['Mobile Number']||r['Mobile']||''),whatsapp:String(r['WhatsApp Number']||r['Whatsapp']||r['WhatsApp']||r['Mobile Number']||''),branch:String(r['Branch Name']||r['Branch']||''),status:String(r['Status']||'Active'),nopTarget:Number(r['NOP Target']||0),premiumTarget:Number(r['Premium Target']||0),currentNop:Number(r['Current NOP']||0),currentPremium:Number(r['Current Premium']||0)});added++});persist();alert(added+' advisors imported')};reader.readAsBinaryString(file);e.target.value=''}
+function exportExcel(){let rows=db.advisors.map(a=>({'Agency Code':a.code,'Advisor Name':a.name,'Mobile Number':a.mobile,'WhatsApp Number':a.whatsapp,'Branch Name':a.branch,'Status':a.status,'NOP Target':a.nopTarget,'Premium Target':a.premiumTarget,'Current NOP':a.currentNop,'Current Premium':a.currentPremium}));let ws=XLSX.utils.json_to_sheet(rows);let wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Advisors');XLSX.writeFile(wb,'Unit1_Advisor_Dashboard.xlsx')}
+function backupData(){backupBox.value=JSON.stringify(db,null,2)}
+function restoreData(){try{db=JSON.parse(backupBox.value);persist();alert('Data restored')}catch(e){alert('Invalid backup data')}}
+function clearAll(){if(confirm('Clear full database?')){db={advisors:[],updates:[]};persist()}}
+renderAll();
+</script>
+</body>
+</html>
