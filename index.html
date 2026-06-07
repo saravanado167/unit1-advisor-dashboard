@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Unit-1 Advisor Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.1.1/tesseract.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Rajdhani:wght@500;600;700&display=swap');
+:root{--lic-blue:#003087;--lic-blue-mid:#0047BB;--lic-blue-light:#1565C0;--lic-yellow:#FFB800;--bg-main:#F0F4FF;--bg-card:#FFFFFF;--text-dark:#0D1B3E;--text-mid:#3A4A6B;--text-light:#7B8DB0;--border:#D6E0F5;--success:#00A86B;--danger:#E53935;--nav-h:64px;--radius:14px;--shadow-card:0 4px 20px rgba(0,48,135,0.08)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Poppins',sans-serif;background:var(--bg-main);color:var(--text-dark);min-height:100vh;padding-bottom:calc(var(--nav-h) + 8px);overflow-x:hidden}
+.topbar{background:linear-gradient(135deg,var(--lic-blue),var(--lic-blue-mid));color:#fff;padding:14px 16px 12px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,48,135,.3)}
+.topbar-title{font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;letter-spacing:.5px}
+.topbar-sub{font-size:10px;opacity:.75;margin-top:1px}
+.topbar-logo{width:38px;height:38px;background:var(--lic-yellow);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Rajdhani',sans-serif;font-weight:700;color:var(--lic-blue);font-size:14px;flex-shrink:0}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;height:var(--nav-h);background:var(--lic-blue);display:flex;z-index:200;box-shadow:0 -2px 16px rgba(0,48,135,.2)}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:rgba(255,255,255,.5);font-size:9px;font-weight:500;gap:3px;cursor:pointer;transition:all .2s;padding:6px 2px;border-top:2px solid transparent}
+.nav-item.active{color:var(--lic-yellow);border-top-color:var(--lic-yellow)}
+.nav-item svg{width:20px;height:20px}
+.page{display:none;padding:14px;animation:fadeIn .25s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.card{background:var(--bg-card);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow-card);border:1px solid var(--border);margin-bottom:12px}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.stat-card{background:var(--bg-card);border-radius:var(--radius);padding:14px 12px;box-shadow:var(--shadow-card);border:1px solid var(--border);text-align:center}
+.stat-card.blue{background:linear-gradient(135deg,var(--lic-blue),var(--lic-blue-mid));color:#fff;border:none}
+.stat-card.yellow{background:linear-gradient(135deg,#FF8C00,var(--lic-yellow));color:#fff;border:none}
+.stat-card.green{background:linear-gradient(135deg,#007A4D,#00A86B);color:#fff;border:none}
+.stat-card.purple{background:linear-gradient(135deg,#5B2C8D,#8E44AD);color:#fff;border:none}
+.stat-value{font-family:'Rajdhani',sans-serif;font-size:26px;font-weight:700;line-height:1}
+.stat-label{font-size:10px;margin-top:4px;opacity:.85;font-weight:500;letter-spacing:.3px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:10px;font-family:'Poppins',sans-serif;font-size:13px;font-weight:600;border:none;cursor:pointer;transition:all .18s;text-decoration:none;white-space:nowrap}
+.btn:active{transform:scale(.96)}
+.btn-primary{background:var(--lic-blue);color:#fff}
+.btn-yellow{background:var(--lic-yellow);color:var(--lic-blue)}
+.btn-success{background:var(--success);color:#fff}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-outline{background:transparent;color:var(--lic-blue);border:1.5px solid var(--lic-blue)}
+.btn-sm{padding:6px 12px;font-size:11px;border-radius:8px}
+.btn-block{width:100%;display:flex}
+.btn-whatsapp{background:#25D366;color:#fff}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.quick-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.quick-btn{background:var(--bg-card);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;font-size:12px;font-weight:600;color:var(--lic-blue);transition:all .18s;box-shadow:var(--shadow-card)}
+.quick-btn:active{transform:scale(.96);background:var(--bg-main)}
+.quick-btn svg{width:26px;height:26px;color:var(--lic-blue-mid)}
+.form-group{margin-bottom:12px}
+.form-label{font-size:12px;font-weight:600;color:var(--text-mid);margin-bottom:4px;display:block}
+.form-control{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:10px;font-family:'Poppins',sans-serif;font-size:13px;color:var(--text-dark);background:#fff;outline:none;transition:border .18s}
+.form-control:focus{border-color:var(--lic-blue-mid)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.checkbox-row{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.checkbox-row input[type=checkbox]{width:18px;height:18px;accent-color:var(--lic-blue)}
+.checkbox-row label{font-size:13px;color:var(--text-mid)}
+.advisor-card{background:var(--bg-card);border-radius:var(--radius);box-shadow:var(--shadow-card);border:1px solid var(--border);margin-bottom:12px;overflow:hidden}
+.advisor-card-header{background:linear-gradient(135deg,var(--lic-blue),var(--lic-blue-mid));padding:12px 14px;display:flex;justify-content:space-between;align-items:flex-start}
+.advisor-name{color:#fff;font-size:15px;font-weight:700}
+.advisor-code{color:var(--lic-yellow);font-size:11px;font-weight:600;margin-top:2px}
+.advisor-body{padding:12px 14px}
+.advisor-info-row{display:flex;justify-content:space-between;margin-bottom:6px;font-size:12px}
+.advisor-info-row .label{color:var(--text-light)}
+.advisor-info-row .value{color:var(--text-dark);font-weight:600}
+.advisor-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.advisor-stat{background:var(--bg-main);border-radius:8px;padding:8px;text-align:center}
+.advisor-stat-val{font-size:16px;font-weight:700;color:var(--lic-blue);font-family:'Rajdhani',sans-serif}
+.advisor-stat-lbl{font-size:9px;color:var(--text-light)}
+.progress-wrap{margin:8px 0}
+.progress-label{display:flex;justify-content:space-between;font-size:10px;color:var(--text-light);margin-bottom:3px}
+.progress-bar{height:6px;background:var(--border);border-radius:99px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--lic-blue),var(--lic-blue-mid));border-radius:99px;transition:width .4s}
+.progress-fill.yellow{background:linear-gradient(90deg,#FF8C00,var(--lic-yellow))}
+.section-head{font-family:'Rajdhani',sans-serif;font-size:17px;font-weight:700;color:var(--lic-blue);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.section-head::after{content:'';flex:1;height:2px;background:linear-gradient(90deg,var(--lic-yellow),transparent);border-radius:2px}
+.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700}
+.badge-blue{background:#E3EEFF;color:var(--lic-blue)}
+.badge-green{background:#E3FFF4;color:var(--success)}
+.badge-red{background:#FFE3E3;color:var(--danger)}
+.badge-yellow{background:#FFF7E3;color:#B86000}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;display:none;align-items:flex-end;justify-content:center}
+.modal-overlay.open{display:flex;animation:fadeIn .2s}
+.modal{background:#fff;border-radius:20px 20px 0 0;width:100%;max-height:90vh;overflow-y:auto;padding:20px 16px 30px;animation:slideUp .25s ease}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:40px;height:4px;background:var(--border);border-radius:99px;margin:0 auto 16px}
+.modal-title{font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:700;color:var(--lic-blue);margin-bottom:16px}
+.modal-close{float:right;background:none;border:none;font-size:22px;cursor:pointer;color:var(--text-light)}
+.search-bar{display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:0 12px;margin-bottom:12px}
+.search-bar input{flex:1;border:none;outline:none;font-family:'Poppins',sans-serif;font-size:13px;padding:10px 0;background:transparent}
+.search-bar svg{width:16px;height:16px;color:var(--text-light);flex-shrink:0}
+.upload-zone{border:2px dashed var(--lic-blue-mid);border-radius:var(--radius);padding:28px 20px;text-align:center;background:linear-gradient(135deg,#EEF3FF,#F5F8FF);margin-bottom:14px}
+.upload-zone p{font-size:12px;color:var(--text-light);margin-top:6px}
+.img-preview{width:100%;border-radius:var(--radius);margin-bottom:12px;border:2px solid var(--border);max-height:220px;object-fit:cover}
+.ocr-status{background:#FFF7E3;border:1px solid var(--lic-yellow);border-radius:10px;padding:10px 14px;font-size:12px;color:#7A4F00;margin-bottom:10px;display:none}
+.ocr-status.show{display:block}
+.extracted-card{background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);padding:12px 14px;margin-bottom:10px;box-shadow:var(--shadow-card);position:relative}
+.extracted-card.unmatched{border-color:var(--danger);background:#FFF8F8}
+.rank-badge{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0}
+.rank-1{background:var(--lic-yellow);color:var(--lic-blue)}
+.rank-2{background:#C0C0C0;color:#333}
+.rank-3{background:#CD7F32;color:#fff}
+.rank-other{background:var(--bg-main);color:var(--text-mid);font-size:11px}
+.report-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+.report-row:last-child{border:none}
+.settings-item{background:#fff;border-radius:12px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;border:1px solid var(--border);margin-bottom:10px;cursor:pointer;box-shadow:var(--shadow-card)}
+.settings-item:active{background:var(--bg-main)}
+.settings-item-left{display:flex;align-items:center;gap:12px}
+.settings-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center}
+.sort-tabs{display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;padding-bottom:2px}
+.sort-tab{padding:7px 14px;border-radius:99px;font-size:12px;font-weight:600;border:1.5px solid var(--border);background:#fff;color:var(--text-mid);cursor:pointer;white-space:nowrap;transition:all .18s}
+.sort-tab.active{background:var(--lic-blue);color:#fff;border-color:var(--lic-blue)}
+.toast{position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#0D1B3E;color:#fff;padding:10px 20px;border-radius:99px;font-size:13px;font-weight:500;z-index:999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;max-width:90%}
+.toast.show{opacity:1}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text-light)}
+.empty-state svg{width:60px;height:60px;opacity:.3;margin-bottom:12px}
+.empty-state p{font-size:14px}
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.top-performer-card{background:linear-gradient(135deg,var(--lic-blue),var(--lic-blue-mid));color:#fff;border-radius:var(--radius);padding:14px;margin-bottom:10px}
+.top-performer-card .title{font-size:10px;opacity:.7;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+.top-performer-card .name{font-size:17px;font-weight:700;font-family:'Rajdhani',sans-serif}
+.top-performer-card .value{font-size:13px;color:var(--lic-yellow);font-weight:600;margin-top:2px}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div><div class="topbar-title">Unit-1 Dashboard</div><div class="topbar-sub">LIC Advisor Management</div></div>
+  <div class="topbar-logo">U1</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<!-- HOME -->
+<div class="page active" id="page-home">
+  <div class="stat-grid" id="home-stats"></div>
+  <div class="section-head">Top Performers</div>
+  <div id="home-top"></div>
+  <div class="section-head">Quick Actions</div>
+  <div class="quick-grid">
+    <div class="quick-btn" onclick="openAddAdvisorModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>Add Advisor
+    </div>
+    <div class="quick-btn" onclick="document.getElementById('excel-import-input').click()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Import Excel
+    </div>
+    <div class="quick-btn" onclick="showPage('today')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Today's Update
+    </div>
+    <div class="quick-btn" onclick="showPage('monthly')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Monthly Perf.
+    </div>
+  </div>
+</div>
+
+<!-- ADVISORS -->
+<div class="page" id="page-advisors">
+  <div style="display:flex;gap:8px;margin-bottom:12px">
+    <button class="btn btn-primary btn-sm" onclick="openAddAdvisorModal()" style="flex:1">➕ Add Advisor</button>
+    <button class="btn btn-yellow btn-sm" onclick="document.getElementById('excel-import-input').click()" style="flex:1">📥 Import Excel</button>
+    <button class="btn btn-outline btn-sm" onclick="exportAdvisors()">⬇️</button>
+  </div>
+  <div class="search-bar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <input type="text" id="advisor-search" placeholder="Search by name or code..." oninput="renderAdvisors()">
+  </div>
+  <div id="advisor-list"></div>
+</div>
+
+<!-- TODAY -->
+<div class="page" id="page-today">
+  <div class="section-head">Daily Update</div>
+  <div class="upload-zone">
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#003087" stroke-width="1.5" style="margin:0 auto;display:block"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+    <p style="margin-top:8px;font-size:13px;font-weight:600;color:#003087">Capture or Upload Performance Screenshot</p>
+    <p>OCR will extract data automatically</p>
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:14px">
+      <button class="btn btn-primary" onclick="document.getElementById('camera-input').click()">📷 Take Photo</button>
+      <button class="btn btn-outline" onclick="document.getElementById('gallery-input').click()">🖼 Upload Image</button>
+    </div>
+  </div>
+  <input type="file" id="camera-input" accept="image/*" capture="environment" style="display:none" onchange="handleImageUpload(this)">
+  <input type="file" id="gallery-input" accept="image/*" style="display:none" onchange="handleImageUpload(this)">
+  <img id="img-preview" class="img-preview" style="display:none">
+  <div class="ocr-status" id="ocr-status">🔍 Running OCR... please wait</div>
+  <div id="extracted-rows"></div>
+  <div id="save-all-btn-wrap" style="display:none">
+    <button class="btn btn-success btn-block" onclick="saveAllUpdates()">✅ Save All Updates</button>
+  </div>
+  <div id="today-history-wrap" style="margin-top:20px">
+    <div class="section-head">Today's Saved Updates</div>
+    <div id="today-history"></div>
+  </div>
+</div>
+
+<!-- MONTHLY -->
+<div class="page" id="page-monthly">
+  <div class="sort-tabs">
+    <div class="sort-tab active" onclick="setSortMonthly('nop',this)">By NOP</div>
+    <div class="sort-tab" onclick="setSortMonthly('premium',this)">By Premium</div>
+    <div class="sort-tab" onclick="setSortMonthly('achievement',this)">By Achievement</div>
+  </div>
+  <div id="monthly-top-row" style="margin-bottom:12px"></div>
+  <div id="monthly-list"></div>
+</div>
+
+<!-- REPORTS -->
+<div class="page" id="page-reports">
+  <div class="section-head">Reports</div>
+  <div class="sort-tabs">
+    <div class="sort-tab active" onclick="setReportTab('daily',this)">Daily Updates</div>
+    <div class="sort-tab" onclick="setReportTab('monthly',this)">Monthly Summary</div>
+    <div class="sort-tab" onclick="setReportTab('advisor',this)">Advisor-wise</div>
+  </div>
+  <div class="filter-row" style="flex-direction:column;gap:8px">
+    <select class="form-control" id="filter-advisor" onchange="renderReports()">
+      <option value="">All Advisors</option>
+    </select>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div>
+        <div style="font-size:11px;font-weight:600;color:var(--text-mid);margin-bottom:3px">From Date</div>
+        <input type="date" class="form-control" id="filter-date-from" onchange="renderReports()">
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:600;color:var(--text-mid);margin-bottom:3px">To Date</div>
+        <input type="date" class="form-control" id="filter-date-to" onchange="renderReports()">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline btn-sm" onclick="clearDateFilter()" style="flex:1">Clear</button>
+      <button class="btn btn-primary btn-sm" onclick="setThisMonth()" style="flex:1">This Month</button>
+      <button class="btn btn-yellow btn-sm" onclick="setTodayFilter()" style="flex:1">Today</button>
+    </div>
+  </div>
+  <button class="btn btn-success btn-block" onclick="exportReport()" style="margin-bottom:12px">
+    ⬇️ Export Excel (Date-wise + WA Message)
+  </button>
+  <div id="report-content"></div>
+</div>
+
+<!-- SETTINGS -->
+<div class="page" id="page-settings">
+  <div class="section-head">Settings</div>
+  <div class="settings-item" onclick="backupData()">
+    <div class="settings-item-left">
+      <div class="settings-icon" style="background:#EEF3FF">💾</div>
+      <div><div style="font-size:14px;font-weight:600">Backup Data</div><div style="font-size:11px;color:var(--text-light)">Download all data as JSON</div></div>
+    </div>›
+  </div>
+  <div class="settings-item" onclick="document.getElementById('restore-input').click()">
+    <div class="settings-item-left">
+      <div class="settings-icon" style="background:#E3FFF4">📂</div>
+      <div><div style="font-size:14px;font-weight:600">Restore Data</div><div style="font-size:11px;color:var(--text-light)">Load from JSON backup</div></div>
+    </div>›
+  </div>
+  <div class="settings-item" onclick="clearAllData()">
+    <div class="settings-item-left">
+      <div class="settings-icon" style="background:#FFE3E3">🗑</div>
+      <div><div style="font-size:14px;font-weight:600;color:var(--danger)">Clear All Data</div><div style="font-size:11px;color:var(--text-light)">Delete everything permanently</div></div>
+    </div>›
+  </div>
+  <input type="file" id="restore-input" accept=".json" style="display:none" onchange="restoreData(this)">
+  <input type="file" id="excel-import-input" accept=".xlsx,.xls" style="display:none" onchange="importExcel(this)">
+  <div class="card" style="margin-top:8px;text-align:center">
+    <div style="font-family:'Rajdhani',sans-serif;font-size:22px;font-weight:700;color:var(--lic-blue)">Unit-1 Advisor Dashboard</div>
+    <div style="font-size:12px;color:var(--text-light);margin-top:4px">Version 2.0.0</div>
+    <div style="font-size:11px;color:var(--text-light);margin-top:8px;line-height:1.6">Built for LIC Unit-1 Manager<br>Offline — All data stored locally</div>
+    <div style="margin-top:10px">
+      <span class="badge badge-blue">No Cloud</span>&nbsp;
+      <span class="badge badge-green">No Login</span>&nbsp;
+      <span class="badge badge-yellow">LIC Theme</span>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <div class="nav-item active" id="nav-home" onclick="showPage('home')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Home
+  </div>
+  <div class="nav-item" id="nav-advisors" onclick="showPage('advisors')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4a4 4 0 014 4v2"/><path d="M16 3.13a4 4 0 010 7.75"/><path d="M21 21v-2a4 4 0 00-3-3.87"/></svg>Advisors
+  </div>
+  <div class="nav-item" id="nav-today" onclick="showPage('today')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>Today
+  </div>
+  <div class="nav-item" id="nav-monthly" onclick="showPage('monthly')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Monthly
+  </div>
+  <div class="nav-item" id="nav-reports" onclick="showPage('reports')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Reports
+  </div>
+  <div class="nav-item" id="nav-settings" onclick="showPage('settings')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>Settings
+  </div>
+</nav>
+
+<!-- MODALS -->
+<div class="modal-overlay" id="modal-advisor">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeModal('modal-advisor')">✕</button>
+    <div class="modal-title" id="modal-advisor-title">Add Advisor</div>
+    <div class="form-group"><label class="form-label">Agency Code *</label><input type="text" class="form-control" id="f-code" placeholder="e.g. 12345678"></div>
+    <div class="form-group"><label class="form-label">Advisor Name *</label><input type="text" class="form-control" id="f-name" placeholder="Full Name"></div>
+    <div class="form-group"><label class="form-label">Mobile Number *</label><input type="tel" class="form-control" id="f-mobile" placeholder="10-digit mobile" oninput="syncWA()"></div>
+    <div class="checkbox-row"><input type="checkbox" id="f-wa-same" checked onchange="toggleWA()"><label for="f-wa-same">WhatsApp same as Mobile</label></div>
+    <div class="form-group" id="wa-field" style="display:none"><label class="form-label">WhatsApp Number</label><input type="tel" class="form-control" id="f-wa" placeholder="WhatsApp number"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">NOP Target</label><input type="number" class="form-control" id="f-nop-target" placeholder="0"></div>
+      <div class="form-group"><label class="form-label">Premium Target (₹)</label><input type="number" class="form-control" id="f-prem-target" placeholder="0"></div>
+    </div>
+    <div id="edit-only-fields" style="display:none">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Current NOP</label><input type="number" class="form-control" id="f-cur-nop" placeholder="0"></div>
+        <div class="form-group"><label class="form-label">Current Premium (₹)</label><input type="number" class="form-control" id="f-cur-prem" placeholder="0"></div>
+      </div>
+    </div>
+    <input type="hidden" id="f-edit-code">
+    <button class="btn btn-primary btn-block" onclick="saveAdvisor()" style="margin-top:6px">✅ Save Advisor</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-edit-row">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeModal('modal-edit-row')">✕</button>
+    <div class="modal-title">Edit Extracted Row</div>
+    <div class="form-group"><label class="form-label">Agency Code</label><input type="text" class="form-control" id="er-code"></div>
+    <div class="form-group"><label class="form-label">Advisor Name</label><input type="text" class="form-control" id="er-name"></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">NOP</label><input type="number" class="form-control" id="er-nop"></div>
+      <div class="form-group"><label class="form-label">Premium (₹)</label><input type="number" class="form-control" id="er-prem"></div>
+    </div>
+    <div class="form-group" id="er-advisor-select-wrap" style="display:none">
+      <label class="form-label">Select Advisor (Unmatched)</label>
+      <select class="form-control" id="er-advisor-select"><option value="">-- Select --</option></select>
+    </div>
+    <input type="hidden" id="er-idx">
+    <button class="btn btn-primary btn-block" onclick="saveEditedRow()" style="margin-top:6px">Save Row</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-confirm">
+  <div class="modal" style="padding-bottom:20px">
+    <div class="modal-handle"></div>
+    <div class="modal-title">⚠️ Confirm</div>
+    <p style="font-size:14px;color:var(--text-mid);margin-bottom:20px" id="confirm-msg">Are you sure?</p>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-outline" onclick="closeModal('modal-confirm')" style="flex:1">Cancel</button>
+      <button class="btn btn-danger" id="confirm-ok-btn" style="flex:1">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-wa">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeModal('modal-wa')">✕</button>
+    <div class="modal-title">💬 WhatsApp Message</div>
+    <div id="wa-advisor-name" style="font-size:13px;color:var(--text-light);margin-bottom:10px"></div>
+    <textarea id="wa-msg-text" class="form-control" rows="10" style="font-size:12px;line-height:1.6;font-family:monospace"></textarea>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-outline" onclick="copyWAMsg()" style="flex:1">📋 Copy</button>
+      <a id="wa-link-btn" class="btn btn-whatsapp" style="flex:1;text-decoration:none" target="_blank">💬 Open WhatsApp</a>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===================== DATA =====================
+const getData = (k,d)=>{ try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d} };
+const setData = (k,v)=>{ try{localStorage.setItem(k,JSON.stringify(v))}catch(e){showToast('Storage error!')} };
+const getAdvisors = ()=>getData('u1_advisors',[]);
+const saveAdvisors = a=>setData('u1_advisors',a);
+const getUpdates = ()=>getData('u1_updates',[]);
+const saveUpdates = u=>setData('u1_updates',u);
+
+// ===================== UTILS =====================
+const fmt = n=>Number(n||0).toLocaleString('en-IN');
+const pct = (c,t)=>(!t?0:Math.min(Math.round((c/t)*100),999));
+function showToast(msg,dur=2500){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),dur)}
+function openModal(id){document.getElementById(id).classList.add('open')}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open')}));
+function confirm2(msg,onOk){document.getElementById('confirm-msg').textContent=msg;document.getElementById('confirm-ok-btn').onclick=()=>{onOk();closeModal('modal-confirm')};openModal('modal-confirm')}
+
+// Safe Excel download — no filename prompt, no corruption
+function downloadXLSX(wb,filename){
+  try{
+    const out=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+    const blob=new Blob([out],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=filename;
+    a.style.display='none';
+    document.body.appendChild(a);
+    a.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,view:window}));
+    setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url)},100);
+  }catch(e){showToast('Export error: '+e.message)}
+}
+
+// ===================== NAV =====================
+let currentPage='home';
+function showPage(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.getElementById('nav-'+page).classList.add('active');
+  currentPage=page;
+  if(page==='home')renderHome();
+  if(page==='advisors')renderAdvisors();
+  if(page==='today')renderTodayHistory();
+  if(page==='monthly')renderMonthly();
+  if(page==='reports')renderReports();
+}
+
+// ===================== HOME =====================
+function renderHome(){
+  const advisors=getAdvisors();
+  const updates=getUpdates();
+  const today=new Date().toDateString();
+  const todayU=updates.filter(u=>new Date(u.timestamp).toDateString()===today);
+  const totalNOP=advisors.reduce((s,a)=>s+(a.currentNOP||0),0);
+  const totalPrem=advisors.reduce((s,a)=>s+(a.currentPremium||0),0);
+  document.getElementById('home-stats').innerHTML=`
+    <div class="stat-card blue"><div class="stat-value">${advisors.length}</div><div class="stat-label">Total Advisors</div></div>
+    <div class="stat-card yellow"><div class="stat-value">${fmt(totalNOP)}</div><div class="stat-label">Total NOP</div></div>
+    <div class="stat-card green"><div class="stat-value">₹${fmt(totalPrem)}</div><div class="stat-label">Total Premium</div></div>
+    <div class="stat-card purple"><div class="stat-value">${todayU.length}</div><div class="stat-label">Today Updates</div></div>`;
+  let topHTML='';
+  if(advisors.length){
+    const topNOP=[...advisors].sort((a,b)=>(b.currentNOP||0)-(a.currentNOP||0))[0];
+    const topPrem=[...advisors].sort((a,b)=>(b.currentPremium||0)-(a.currentPremium||0))[0];
+    topHTML=`
+      <div class="top-performer-card"><div class="title">🏆 Top NOP Performer</div><div class="name">${topNOP.name}</div><div class="value">NOP: ${fmt(topNOP.currentNOP||0)} / ${fmt(topNOP.nopTarget||0)}</div></div>
+      <div class="top-performer-card"><div class="title">💰 Top Premium Performer</div><div class="name">${topPrem.name}</div><div class="value">₹${fmt(topPrem.currentPremium||0)} / ₹${fmt(topPrem.premiumTarget||0)}</div></div>`;
+  } else {
+    topHTML='<div class="card" style="text-align:center;color:var(--text-light);font-size:13px">No advisors yet. Add advisors to see performers.</div>';
+  }
+  document.getElementById('home-top').innerHTML=topHTML;
+}
+
+// ===================== ADVISORS =====================
+function renderAdvisors(){
+  const q=(document.getElementById('advisor-search')?.value||'').toLowerCase();
+  const advisors=getAdvisors().filter(a=>a.name.toLowerCase().includes(q)||a.code.toLowerCase().includes(q));
+  const el=document.getElementById('advisor-list');
+  if(!advisors.length){el.innerHTML='<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 014-4h4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg><p>No advisors found.<br>Add one or import Excel.</p></div>';return}
+  el.innerHTML=advisors.map(a=>advisorCardHTML(a)).join('');
+}
+function advisorCardHTML(a){
+  const np=pct(a.currentNOP||0,a.nopTarget||0);
+  const pp=pct(a.currentPremium||0,a.premiumTarget||0);
+  return `<div class="advisor-card">
+    <div class="advisor-card-header">
+      <div><div class="advisor-name">${a.name}</div><div class="advisor-code">Code: ${a.code}</div></div>
+      <span class="badge badge-yellow">${np}% NOP</span>
+    </div>
+    <div class="advisor-body">
+      <div class="advisor-info-row"><span class="label">📱 Mobile</span><span class="value">${a.mobile}</span></div>
+      <div class="advisor-info-row"><span class="label">💬 WhatsApp</span><span class="value">${a.whatsapp}</span></div>
+      <div class="advisor-stats">
+        <div class="advisor-stat"><div class="advisor-stat-val">${fmt(a.currentNOP||0)}</div><div class="advisor-stat-lbl">Current NOP</div></div>
+        <div class="advisor-stat"><div class="advisor-stat-val">${fmt(a.nopTarget||0)}</div><div class="advisor-stat-lbl">NOP Target</div></div>
+        <div class="advisor-stat"><div class="advisor-stat-val">₹${fmt(a.currentPremium||0)}</div><div class="advisor-stat-lbl">Cur. Premium</div></div>
+        <div class="advisor-stat"><div class="advisor-stat-val">₹${fmt(a.premiumTarget||0)}</div><div class="advisor-stat-lbl">Prem. Target</div></div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-label"><span>NOP Progress</span><span>${np}%</span></div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(np,100)}%"></div></div>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-label"><span>Premium Progress</span><span>${pp}%</span></div>
+        <div class="progress-bar"><div class="progress-fill yellow" style="width:${Math.min(pp,100)}%"></div></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary btn-sm" onclick="openEditAdvisorModal('${a.code}')">✏️ Modify</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteAdvisor('${a.code}')">🗑 Delete</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ===================== ADD/EDIT ADVISOR =====================
+function openAddAdvisorModal(){
+  document.getElementById('modal-advisor-title').textContent='Add Advisor';
+  ['f-code','f-name','f-mobile','f-wa','f-nop-target','f-prem-target','f-cur-nop','f-cur-prem','f-edit-code'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-code').disabled=false;
+  document.getElementById('f-wa-same').checked=true;
+  document.getElementById('wa-field').style.display='none';
+  document.getElementById('edit-only-fields').style.display='none';
+  openModal('modal-advisor');
+}
+function openEditAdvisorModal(code){
+  const a=getAdvisors().find(x=>x.code===code);if(!a)return;
+  document.getElementById('modal-advisor-title').textContent='Modify Advisor';
+  document.getElementById('f-code').value=a.code;document.getElementById('f-code').disabled=true;
+  document.getElementById('f-name').value=a.name;document.getElementById('f-mobile').value=a.mobile;
+  const waSame=a.whatsapp===a.mobile;
+  document.getElementById('f-wa-same').checked=waSame;
+  document.getElementById('f-wa').value=a.whatsapp;
+  document.getElementById('wa-field').style.display=waSame?'none':'block';
+  document.getElementById('f-nop-target').value=a.nopTarget||'';document.getElementById('f-prem-target').value=a.premiumTarget||'';
+  document.getElementById('f-cur-nop').value=a.currentNOP||'';document.getElementById('f-cur-prem').value=a.currentPremium||'';
+  document.getElementById('edit-only-fields').style.display='block';
+  document.getElementById('f-edit-code').value=code;
+  openModal('modal-advisor');
+}
+function toggleWA(){
+  const same=document.getElementById('f-wa-same').checked;
+  document.getElementById('wa-field').style.display=same?'none':'block';
+  if(same)syncWA();
+}
+function syncWA(){
+  if(document.getElementById('f-wa-same').checked)
+    document.getElementById('f-wa').value=document.getElementById('f-mobile').value;
+}
+function saveAdvisor(){
+  const code=document.getElementById('f-code').value.trim();
+  const name=document.getElementById('f-name').value.trim();
+  const mobile=document.getElementById('f-mobile').value.trim();
+  const waSame=document.getElementById('f-wa-same').checked;
+  const wa=waSame?mobile:(document.getElementById('f-wa').value.trim()||mobile);
+  const nopT=Number(document.getElementById('f-nop-target').value)||0;
+  const premT=Number(document.getElementById('f-prem-target').value)||0;
+  const curNOP=Number(document.getElementById('f-cur-nop').value)||0;
+  const curPrem=Number(document.getElementById('f-cur-prem').value)||0;
+  const editCode=document.getElementById('f-edit-code').value;
+  if(!code||!name||!mobile){showToast('Please fill required fields');return}
+  let advisors=getAdvisors();
+  if(editCode){
+    const idx=advisors.findIndex(a=>a.code===editCode);
+    if(idx>-1)advisors[idx]={...advisors[idx],name,mobile,whatsapp:wa,nopTarget:nopT,premiumTarget:premT,currentNOP:curNOP,currentPremium:curPrem};
+    showToast('Advisor updated!');
+  } else {
+    const exists=advisors.findIndex(a=>a.code===code);
+    const adv={code,name,mobile,whatsapp:wa,nopTarget:nopT,premiumTarget:premT,currentNOP:0,currentPremium:0};
+    if(exists>-1){advisors[exists]={...advisors[exists],...adv};showToast('Advisor updated!')}
+    else{advisors.push(adv);showToast('Advisor added!')}
+  }
+  saveAdvisors(advisors);closeModal('modal-advisor');renderAdvisors();
+  if(currentPage==='home')renderHome();
+}
+function deleteAdvisor(code){
+  const a=getAdvisors().find(x=>x.code===code);
+  confirm2(`Delete "${a?.name||code}"? Cannot be undone.`,()=>{
+    saveAdvisors(getAdvisors().filter(x=>x.code!==code));renderAdvisors();showToast('Advisor deleted');
+  });
+}
+
+// ===================== EXCEL IMPORT =====================
+function importExcel(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'binary'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws);
+      let advisors=getAdvisors();let added=0,updated=0;
+      rows.forEach(row=>{
+        const code=String(row['Agency Code']||row['agency_code']||'').trim();
+        const name=String(row['Advisor Name']||row['advisor_name']||'').trim();
+        const mobile=String(row['Mobile Number']||row['mobile_number']||'').trim();
+        const wa=String(row['WhatsApp Number']||row['whatsapp_number']||'').trim()||mobile;
+        const nopT=Number(row['NOP Target']||row['nop_target']||0);
+        const premT=Number(row['Premium Target']||row['premium_target']||0);
+        if(!code||!name)return;
+        const idx=advisors.findIndex(a=>a.code===code);
+        if(idx>-1){advisors[idx]={...advisors[idx],name,mobile,whatsapp:wa,nopTarget:nopT,premiumTarget:premT};updated++}
+        else{advisors.push({code,name,mobile,whatsapp:wa,nopTarget:nopT,premiumTarget:premT,currentNOP:0,currentPremium:0});added++}
+      });
+      saveAdvisors(advisors);showToast(`Imported: ${added} added, ${updated} updated`);
+      renderAdvisors();if(currentPage==='home')renderHome();
+    }catch(err){showToast('Import failed: '+err.message)}
+    input.value='';
+  };
+  reader.readAsBinaryString(file);
+}
+function exportAdvisors(){
+  const advisors=getAdvisors();
+  if(!advisors.length){showToast('No advisors to export');return}
+  const data=advisors.map(a=>({'Agency Code':a.code,'Advisor Name':a.name,'Mobile Number':a.mobile,'WhatsApp Number':a.whatsapp,'NOP Target':a.nopTarget||0,'Premium Target':a.premiumTarget||0,'Current NOP':a.currentNOP||0,'Current Premium':a.currentPremium||0}));
+  const ws=XLSX.utils.json_to_sheet(data);
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,'Advisors',ws);
+  downloadXLSX(wb,'Unit1_Advisors.xlsx');
+  showToast('Exported!');
+}
+
+// ===================== TODAY =====================
+let extractedRows=[];
+function handleImageUpload(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const preview=document.getElementById('img-preview');
+    preview.src=e.target.result;preview.style.display='block';
+    runOCR(e.target.result);
+  };
+  reader.readAsDataURL(file);input.value='';
+}
+function runOCR(dataUrl){
+  const status=document.getElementById('ocr-status');
+  status.textContent='🔍 Running OCR... please wait';status.classList.add('show');
+  document.getElementById('extracted-rows').innerHTML='';
+  document.getElementById('save-all-btn-wrap').style.display='none';
+  Tesseract.recognize(dataUrl,'eng',{logger:m=>{if(m.status==='recognizing text')status.textContent=`🔍 OCR: ${Math.round(m.progress*100)}%...`}})
+  .then(({data:{text}})=>{
+    status.textContent='✅ OCR Complete — Review extracted data below';
+    extractedRows=parseOCRText(text);
+    renderExtractedRows();
+    if(extractedRows.length)document.getElementById('save-all-btn-wrap').style.display='block';
+  }).catch(()=>{status.textContent='❌ OCR failed. Try a clearer image.'});
+}
+function parseOCRText(text){
+  const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
+  const advisors=getAdvisors();
+  const rows=[];
+  const codeRegex=/\b(\d{5,12})\b/;
+  const numRegex=/\b(\d{1,6})\b/g;
+  for(let i=0;i<lines.length;i++){
+    const line=lines[i];
+    const codeMatch=line.match(codeRegex);
+    if(codeMatch){
+      const code=codeMatch[1];
+      const advisor=advisors.find(a=>a.code===code);
+      const nums=[...line.matchAll(numRegex)].map(m=>Number(m[1])).filter(n=>n!==Number(code));
+      rows.push({code,name:advisor?advisor.name:'',nop:nums[0]||0,premium:nums[1]||0,matched:!!advisor,advisorRef:advisor||null,idx:rows.length});
+    }
+  }
+  if(!rows.length){
+    for(let i=0;i<lines.length;i++){
+      const nums=[...lines[i].matchAll(/\d+/g)].map(m=>Number(m[0]));
+      if(nums.length>=2)rows.push({code:'',name:lines[i].replace(/\d+/g,'').trim().substring(0,30)||'Unknown',nop:nums[0],premium:nums[1]||0,matched:false,advisorRef:null,idx:rows.length});
+    }
+  }
+  return rows;
+}
+function renderExtractedRows(){
+  const el=document.getElementById('extracted-rows');
+  if(!extractedRows.length){el.innerHTML='<div class="card" style="text-align:center;color:var(--text-light);font-size:13px">No data extracted. Try clearer image or add manually.</div>';return}
+  el.innerHTML=extractedRows.map((r,i)=>`
+    <div class="extracted-card ${r.matched?'':'unmatched'}">
+      <span class="badge ${r.matched?'badge-green':'badge-red'}" style="position:absolute;top:10px;right:10px">${r.matched?'✓ Matched':'Unmatched'}</span>
+      <div style="font-size:13px;font-weight:700;color:var(--lic-blue);margin-bottom:4px;padding-right:80px">${r.name||'Unknown'}</div>
+      <div style="font-size:11px;color:var(--text-light);margin-bottom:8px">Code: ${r.code||'—'}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+        <div class="advisor-stat"><div class="advisor-stat-val">${fmt(r.nop)}</div><div class="advisor-stat-lbl">NOP</div></div>
+        <div class="advisor-stat"><div class="advisor-stat-val">₹${fmt(r.premium)}</div><div class="advisor-stat-lbl">Premium</div></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-outline btn-sm" onclick="openEditRow(${i})">✏️ Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteExtractedRow(${i})">🗑 Delete</button>
+      </div>
+    </div>`).join('');
+}
+function openEditRow(i){
+  const r=extractedRows[i];
+  document.getElementById('er-code').value=r.code||'';
+  document.getElementById('er-name').value=r.name||'';
+  document.getElementById('er-nop').value=r.nop||'';
+  document.getElementById('er-prem').value=r.premium||'';
+  document.getElementById('er-idx').value=i;
+  const advisors=getAdvisors();
+  const sel=document.getElementById('er-advisor-select');
+  sel.innerHTML='<option value="">-- Select Advisor --</option>'+advisors.map(a=>`<option value="${a.code}" ${r.code===a.code?'selected':''}>${a.name} (${a.code})</option>`).join('');
+  document.getElementById('er-advisor-select-wrap').style.display=r.matched?'none':'block';
+  openModal('modal-edit-row');
+}
+function saveEditedRow(){
+  const i=Number(document.getElementById('er-idx').value);
+  const code=document.getElementById('er-code').value.trim();
+  const name=document.getElementById('er-name').value.trim();
+  const nop=Number(document.getElementById('er-nop').value)||0;
+  const premium=Number(document.getElementById('er-prem').value)||0;
+  const selCode=document.getElementById('er-advisor-select').value;
+  const finalCode=selCode||code;
+  const advisor=getAdvisors().find(a=>a.code===finalCode);
+  extractedRows[i]={...extractedRows[i],code:finalCode,name:advisor?advisor.name:name,nop,premium,matched:!!advisor,advisorRef:advisor||null};
+  closeModal('modal-edit-row');renderExtractedRows();showToast('Row updated');
+}
+function deleteExtractedRow(i){
+  extractedRows.splice(i,1);extractedRows.forEach((r,j)=>r.idx=j);
+  renderExtractedRows();
+  if(!extractedRows.length)document.getElementById('save-all-btn-wrap').style.display='none';
+}
+function saveAllUpdates(){
+  const now=new Date().toISOString();
+  let advisors=getAdvisors();let updates=getUpdates();const saved=[];
+  extractedRows.forEach(r=>{
+    if(r.matched&&r.advisorRef){
+      const idx=advisors.findIndex(a=>a.code===r.code);
+      if(idx>-1){
+        advisors[idx].currentNOP=(advisors[idx].currentNOP||0)+(r.nop||0);
+        advisors[idx].currentPremium=(advisors[idx].currentPremium||0)+(r.premium||0);
+        const update={
+          id:Date.now()+'_'+r.code,timestamp:now,
+          code:r.code,name:advisors[idx].name,
+          nop:r.nop||0,premium:r.premium||0,
+          totalNOP:advisors[idx].currentNOP,totalPremium:advisors[idx].currentPremium,
+          nopTarget:advisors[idx].nopTarget||0,premiumTarget:advisors[idx].premiumTarget||0,
+          whatsapp:advisors[idx].whatsapp,mobile:advisors[idx].mobile
+        };
+        updates.push(update);saved.push(update);
+      }
+    }
+  });
+  saveAdvisors(advisors);saveUpdates(updates);
+  showToast(`Saved ${saved.length} updates`);
+  extractedRows=[];
+  document.getElementById('extracted-rows').innerHTML='';
+  document.getElementById('save-all-btn-wrap').style.display='none';
+  document.getElementById('img-preview').style.display='none';
+  document.getElementById('ocr-status').classList.remove('show');
+  renderTodayHistory();
+}
+function renderTodayHistory(){
+  const updates=getUpdates();
+  const today=new Date().toDateString();
+  const todayU=updates.filter(u=>new Date(u.timestamp).toDateString()===today).reverse();
+  const el=document.getElementById('today-history');
+  if(!todayU.length){el.innerHTML='<div style="text-align:center;color:var(--text-light);font-size:12px;padding:20px">No updates saved today yet.</div>';return}
+  el.innerHTML=todayU.map(u=>`
+    <div class="card" style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div><div style="font-size:14px;font-weight:700;color:var(--lic-blue)">${u.name}</div><div style="font-size:11px;color:var(--text-light)">${u.code} · ${new Date(u.timestamp).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'})}</div></div>
+        <span class="badge badge-green">Saved</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0">
+        <div class="advisor-stat"><div class="advisor-stat-val">+${fmt(u.nop)}</div><div class="advisor-stat-lbl">Today NOP</div></div>
+        <div class="advisor-stat"><div class="advisor-stat-val">+₹${fmt(u.premium)}</div><div class="advisor-stat-lbl">Today Premium</div></div>
+      </div>
+      <button class="btn btn-whatsapp btn-sm btn-block" onclick="showWAModal('${u.id}')">💬 Send WhatsApp</button>
+    </div>`).join('');
+}
+
+// ===================== WHATSAPP =====================
+function buildWAMsg(u){
+  const np=u.nopTarget?Math.round((u.totalNOP/u.nopTarget)*100):0;
+  const pp=u.premiumTarget?Math.round((u.totalPremium/u.premiumTarget)*100):0;
+  return `Congratulations ${u.name}! 🎉\n\nToday's Achievement:\nPolicies Completed: ${u.nop}\nPremium: ₹${fmt(u.premium)}\n\nYour Monthly Progress:\nNOP: ${fmt(u.totalNOP)} / ${fmt(u.nopTarget)} (${np}%)\nPremium: ₹${fmt(u.totalPremium)} / ₹${fmt(u.premiumTarget)} (${pp}%)\n\nKeep up the good work! 💪\n\nBest Wishes.\n— Unit-1 Manager`;
+}
+function showWAModal(updateId){
+  const u=getUpdates().find(x=>x.id===updateId);if(!u)return;
+  const msg=buildWAMsg(u);
+  document.getElementById('wa-advisor-name').textContent=u.name+' — '+u.whatsapp;
+  document.getElementById('wa-msg-text').value=msg;
+  const waNum='91'+u.whatsapp.replace(/\D/g,'');
+  document.getElementById('wa-link-btn').href='https://wa.me/'+waNum+'?text='+encodeURIComponent(msg);
+  openModal('modal-wa');
+}
+function copyWAMsg(){
+  const text=document.getElementById('wa-msg-text').value;
+  navigator.clipboard.writeText(text).then(()=>showToast('Copied!')).catch(()=>{document.getElementById('wa-msg-text').select();document.execCommand('copy');showToast('Copied!')});
+}
+
+// ===================== MONTHLY =====================
+let monthlySortBy='nop';
+function setSortMonthly(by,el){
+  monthlySortBy=by;
+  document.querySelectorAll('#page-monthly .sort-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');renderMonthly();
+}
+function renderMonthly(){
+  let advisors=getAdvisors();
+  if(!advisors.length){document.getElementById('monthly-list').innerHTML='<div class="empty-state"><p>No advisors yet.</p></div>';document.getElementById('monthly-top-row').innerHTML='';return}
+  advisors=advisors.map(a=>({...a,achPct:pct(a.currentNOP||0,a.nopTarget||0)}));
+  if(monthlySortBy==='nop')advisors.sort((a,b)=>(b.currentNOP||0)-(a.currentNOP||0));
+  else if(monthlySortBy==='premium')advisors.sort((a,b)=>(b.currentPremium||0)-(a.currentPremium||0));
+  else advisors.sort((a,b)=>b.achPct-a.achPct);
+  const top=advisors[0],low=advisors[advisors.length-1];
+  const topPrem=[...advisors].sort((a,b)=>(b.currentPremium||0)-(a.currentPremium||0))[0];
+  document.getElementById('monthly-top-row').innerHTML=`
+    <div class="top-performer-card"><div class="title">🏆 Top NOP</div><div class="name">${top.name}</div><div class="value">NOP: ${fmt(top.currentNOP||0)}</div></div>
+    <div class="top-performer-card" style="background:linear-gradient(135deg,#005C2B,#007A4D)"><div class="title">💰 Top Premium</div><div class="name">${topPrem.name}</div><div class="value">₹${fmt(topPrem.currentPremium||0)}</div></div>
+    <div class="top-performer-card" style="background:linear-gradient(135deg,#7B1010,#B71C1C)"><div class="title">⚠️ Needs Attention</div><div class="name">${low.name}</div><div class="value">NOP: ${fmt(low.currentNOP||0)} / ${fmt(low.nopTarget||0)}</div></div>`;
+  document.getElementById('monthly-list').innerHTML=advisors.map((a,i)=>{
+    const np=pct(a.currentNOP||0,a.nopTarget||0);
+    const pp=pct(a.currentPremium||0,a.premiumTarget||0);
+    const rc=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-other';
+    return `<div class="card">
+      <div style="display:flex;gap:12px;align-items:flex-start">
+        <div class="rank-badge ${rc}">${i+1}</div>
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:700;color:var(--lic-blue)">${a.name}</div>
+          <div style="font-size:11px;color:var(--text-light)">${a.code}</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0">
+            <div class="advisor-stat"><div class="advisor-stat-val">${fmt(a.currentNOP||0)}</div><div class="advisor-stat-lbl">NOP / ${fmt(a.nopTarget||0)}</div></div>
+            <div class="advisor-stat"><div class="advisor-stat-val">₹${fmt(a.currentPremium||0)}</div><div class="advisor-stat-lbl">Prem / ₹${fmt(a.premiumTarget||0)}</div></div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-label"><span>NOP</span><span>${np}%</span></div>
+            <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(np,100)}%"></div></div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-label"><span>Premium</span><span>${pp}%</span></div>
+            <div class="progress-bar"><div class="progress-fill yellow" style="width:${Math.min(pp,100)}%"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===================== REPORTS =====================
+let reportTab='daily';
+function setReportTab(tab,el){
+  reportTab=tab;
+  document.querySelectorAll('#page-reports .sort-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');renderReports();
+}
+function getFilteredDates(){
+  return{from:document.getElementById('filter-date-from').value,to:document.getElementById('filter-date-to').value};
+}
+function filterUpdates(){
+  const filterAdv=document.getElementById('filter-advisor').value;
+  const{from,to}=getFilteredDates();
+  let updates=getUpdates();
+  if(filterAdv)updates=updates.filter(u=>u.code===filterAdv);
+  if(from)updates=updates.filter(u=>u.timestamp.split('T')[0]>=from);
+  if(to)updates=updates.filter(u=>u.timestamp.split('T')[0]<=to);
+  return updates;
+}
+function clearDateFilter(){document.getElementById('filter-date-from').value='';document.getElementById('filter-date-to').value='';renderReports()}
+function setTodayFilter(){const d=new Date().toISOString().split('T')[0];document.getElementById('filter-date-from').value=d;document.getElementById('filter-date-to').value=d;renderReports()}
+function setThisMonth(){
+  const now=new Date();const y=now.getFullYear();const m=String(now.getMonth()+1).padStart(2,'0');
+  const last=new Date(y,now.getMonth()+1,0).getDate();
+  document.getElementById('filter-date-from').value=`${y}-${m}-01`;
+  document.getElementById('filter-date-to').value=`${y}-${m}-${String(last).padStart(2,'0')}`;
+  renderReports();
+}
+function renderReports(){
+  populateFilterAdvisor();
+  const updates=filterUpdates();
+  const el=document.getElementById('report-content');
+  if(reportTab==='daily'){
+    if(!updates.length){el.innerHTML='<div class="empty-state"><p>No updates found.</p></div>';return}
+    const byDate={};
+    updates.forEach(u=>{const d=u.timestamp.split('T')[0];if(!byDate[d])byDate[d]=[];byDate[d].push(u)});
+    el.innerHTML=Object.keys(byDate).sort().reverse().map(d=>`
+      <div class="card">
+        <div class="section-head" style="font-size:14px">${formatDateLabel(d)}</div>
+        ${byDate[d].map(u=>`<div class="report-row">
+          <div><div style="font-weight:600;font-size:13px">${u.name}</div><div style="font-size:11px;color:var(--text-light)">${u.code}</div></div>
+          <div style="text-align:right"><div style="font-size:12px;font-weight:600">NOP: ${u.nop}</div><div style="font-size:11px;color:var(--text-light)">₹${fmt(u.premium)}</div></div>
+        </div>`).join('')}
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--lic-blue)">
+          <span>Day Total</span><span>NOP: ${byDate[d].reduce((s,u)=>s+u.nop,0)} | ₹${fmt(byDate[d].reduce((s,u)=>s+u.premium,0))}</span>
+        </div>
+      </div>`).join('');
+  } else if(reportTab==='monthly'){
+    const advisors=getAdvisors();
+    el.innerHTML=`<div class="card"><div class="section-head" style="font-size:14px">Monthly Summary</div>
+      ${advisors.map(a=>`<div class="report-row">
+        <div><div style="font-weight:600;font-size:13px">${a.name}</div><div style="font-size:11px;color:var(--text-light)">${a.code}</div></div>
+        <div style="text-align:right"><div style="font-size:12px;font-weight:600">${fmt(a.currentNOP||0)} / ${fmt(a.nopTarget||0)} NOP</div><div style="font-size:11px;color:var(--text-light)">₹${fmt(a.currentPremium||0)}</div></div>
+      </div>`).join('')}
+    </div>`;
+  } else if(reportTab==='advisor'){
+    if(!updates.length){el.innerHTML='<div class="empty-state"><p>No updates found.</p></div>';return}
+    const byAdv={};
+    updates.forEach(u=>{if(!byAdv[u.code])byAdv[u.code]={name:u.name,updates:[]};byAdv[u.code].updates.push(u)});
+    el.innerHTML=Object.values(byAdv).map(a=>`
+      <div class="card">
+        <div class="section-head" style="font-size:14px">${a.name}</div>
+        ${a.updates.map(u=>`<div class="report-row"><span style="font-size:12px">${formatDateLabel(u.timestamp.split('T')[0])}</span><span style="font-size:12px;font-weight:600">NOP: ${u.nop} | ₹${fmt(u.premium)}</span></div>`).join('')}
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--lic-blue)">
+          <span>Total</span><span>NOP: ${a.updates.reduce((s,u)=>s+u.nop,0)} | ₹${fmt(a.updates.reduce((s,u)=>s+u.premium,0))}</span>
+        </div>
+      </div>`).join('');
+  }
+}
+function populateFilterAdvisor(){
+  const sel=document.getElementById('filter-advisor');const cur=sel.value;
+  sel.innerHTML='<option value="">All Advisors</option>'+getAdvisors().map(a=>`<option value="${a.code}" ${cur===a.code?'selected':''}>${a.name}</option>`).join('');
+}
+function formatDateLabel(d){return new Date(d+'T12:00:00').toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}
+function shortDate(d){const dt=new Date(d+'T12:00:00');return`${String(dt.getDate()).padStart(2,'0')}-${dt.toLocaleString('en-IN',{month:'short'})}-${String(dt.getFullYear()).slice(2)}`}
+
+function buildExcelFilename(){
+  const{from,to}=getFilteredDates();
+  if(from&&to&&from!==to)return`Performance_${shortDate(from)}_to_${shortDate(to)}.xlsx`;
+  if(from&&to&&from===to)return`Performance_${shortDate(from)}.xlsx`;
+  if(from)return`Performance_from_${shortDate(from)}.xlsx`;
+  if(to)return`Performance_upto_${shortDate(to)}.xlsx`;
+  const now=new Date();const y=now.getFullYear();const mon=now.toLocaleString('en-IN',{month:'short'});const yy=String(y).slice(2);
+  return`Performance_01-${String(new Date(y,now.getMonth()+1,0).getDate()).padStart(2,'0')}-${mon}-${yy}.xlsx`;
+}
+
+function exportReport(){
+  const updates=filterUpdates();
+  if(!updates.length){showToast('No data to export');return}
+  const dateSet=new Set(updates.map(u=>u.timestamp.split('T')[0]));
+  const dates=[...dateSet].sort();
+  const advMap={};
+  updates.forEach(u=>{if(!advMap[u.code])advMap[u.code]={code:u.code,name:u.name,whatsapp:u.whatsapp||u.mobile||''}});
+  getAdvisors().forEach(a=>{if(!advMap[a.code])advMap[a.code]={code:a.code,name:a.name,whatsapp:a.whatsapp||a.mobile||''}});
+  const advisorList=Object.values(advMap).sort((a,b)=>a.name.localeCompare(b.name));
+  const pivot={};
+  updates.forEach(u=>{
+    const d=u.timestamp.split('T')[0];
+    if(!pivot[u.code])pivot[u.code]={};
+    if(!pivot[u.code][d])pivot[u.code][d]={nop:0,premium:0};
+    pivot[u.code][d].nop+=(u.nop||0);pivot[u.code][d].premium+=(u.premium||0);
+  });
+  const wb=XLSX.utils.book_new();
+
+  // ── Sheet 1: NOP pivot ──
+  const nopHeader=['S.No','Agency Code','Advisor Name',...dates.map(shortDate),'Total NOP','WhatsApp Message','WhatsApp Link'];
+  const nopRows=[nopHeader];
+  advisorList.forEach((adv,idx)=>{
+    const row=[idx+1,adv.code,adv.name,...dates.map(d=>(pivot[adv.code]?.[d]?.nop||0))];
+    const totalNOP=dates.reduce((s,d)=>s+(pivot[adv.code]?.[d]?.nop||0),0);
+    const totalPrem=dates.reduce((s,d)=>s+(pivot[adv.code]?.[d]?.premium||0),0);
+    row.push(totalNOP);
+    const waNum='91'+(adv.whatsapp||'').replace(/\D/g,'');
+    const adObj=getAdvisors().find(a=>a.code===adv.code);
+    const waMsg=totalNOP>0&&adObj?buildWAMsg({name:adObj.name,nop:totalNOP,premium:totalPrem,totalNOP:adObj.currentNOP||0,totalPremium:adObj.currentPremium||0,nopTarget:adObj.nopTarget||0,premiumTarget:adObj.premiumTarget||0}):'';
+    row.push(waMsg);
+    row.push(totalNOP>0?`https://wa.me/${waNum}?text=${encodeURIComponent(waMsg)}`:'');
+    nopRows.push(row);
+  });
+  nopRows.push(['','','TOTAL',...dates.map(d=>updates.filter(u=>u.timestamp.startsWith(d)).reduce((s,u)=>s+(u.nop||0),0)),updates.reduce((s,u)=>s+(u.nop||0),0),'','']);
+  const ws1=XLSX.utils.aoa_to_sheet(nopRows);
+  ws1['!cols']=[{wch:5},{wch:14},{wch:24},...dates.map(()=>({wch:10})),{wch:11},{wch:55},{wch:60}];
+  XLSX.utils.book_append_sheet(wb,ws1,'NOP Report');
+
+  // ── Sheet 2: Premium pivot ──
+  const premHeader=['S.No','Agency Code','Advisor Name',...dates.map(shortDate),'Total Premium (₹)','WhatsApp Message','WhatsApp Link'];
+  const premRows=[premHeader];
+  advisorList.forEach((adv,idx)=>{
+    const row=[idx+1,adv.code,adv.name,...dates.map(d=>(pivot[adv.code]?.[d]?.premium||0))];
+    const totalNOP=dates.reduce((s,d)=>s+(pivot[adv.code]?.[d]?.nop||0),0);
+    const totalPrem=dates.reduce((s,d)=>s+(pivot[adv.code]?.[d]?.premium||0),0);
+    row.push(totalPrem);
+    const waNum='91'+(adv.whatsapp||'').replace(/\D/g,'');
+    const adObj=getAdvisors().find(a=>a.code===adv.code);
+    const waMsg=totalPrem>0&&adObj?buildWAMsg({name:adObj.name,nop:totalNOP,premium:totalPrem,totalNOP:adObj.currentNOP||0,totalPremium:adObj.currentPremium||0,nopTarget:adObj.nopTarget||0,premiumTarget:adObj.premiumTarget||0}):'';
+    row.push(waMsg);
+    row.push(totalPrem>0?`https://wa.me/${waNum}?text=${encodeURIComponent(waMsg)}`:'');
+    premRows.push(row);
+  });
+  premRows.push(['','','TOTAL',...dates.map(d=>updates.filter(u=>u.timestamp.startsWith(d)).reduce((s,u)=>s+(u.premium||0),0)),updates.reduce((s,u)=>s+(u.premium||0),0),'','']);
+  const ws2=XLSX.utils.aoa_to_sheet(premRows);
+  ws2['!cols']=[{wch:5},{wch:14},{wch:24},...dates.map(()=>({wch:12})),{wch:18},{wch:55},{wch:60}];
+  XLSX.utils.book_append_sheet(wb,ws2,'Premium Report');
+
+  // ── Sheet 3: Detail log ──
+  const detailHeader=['S.No','Date','Agency Code','Advisor Name','NOP','Premium (₹)','Total NOP','Total Premium','NOP Target','Premium Target','WhatsApp Message','WhatsApp Link'];
+  const detailRows=[detailHeader];
+  [...updates].sort((a,b)=>a.timestamp.localeCompare(b.timestamp)).forEach((u,i)=>{
+    const waNum='91'+(u.whatsapp||'').replace(/\D/g,'');
+    const waMsg=buildWAMsg(u);
+    detailRows.push([i+1,u.timestamp.split('T')[0],u.code,u.name,u.nop||0,u.premium||0,u.totalNOP||0,u.totalPremium||0,u.nopTarget||0,u.premiumTarget||0,waMsg,`https://wa.me/${waNum}?text=${encodeURIComponent(waMsg)}`]);
+  });
+  const ws3=XLSX.utils.aoa_to_sheet(detailRows);
+  ws3['!cols']=[{wch:5},{wch:12},{wch:14},{wch:24},{wch:6},{wch:14},{wch:11},{wch:16},{wch:11},{wch:16},{wch:55},{wch:60}];
+  XLSX.utils.book_append_sheet(wb,ws3,'Detail Log');
+
+  const filename=buildExcelFilename();
+  downloadXLSX(wb,filename);
+  showToast('Exported: '+filename);
+}
+
+// ===================== SETTINGS =====================
+function backupData(){
+  const backup={version:'2.0.0',timestamp:new Date().toISOString(),advisors:getAdvisors(),updates:getUpdates()};
+  const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='Unit1_Backup_'+new Date().toISOString().split('T')[0]+'.json';
+  document.body.appendChild(a);a.click();setTimeout(()=>a.remove(),2000);
+  showToast('Backup downloaded!');
+}
+function restoreData(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!data.advisors||!data.updates)throw new Error('Invalid backup file');
+      confirm2('Restore will replace all current data. Continue?',()=>{
+        saveAdvisors(data.advisors||[]);saveUpdates(data.updates||[]);showToast('Data restored!');renderHome();
+      });
+    }catch(err){showToast('Restore failed: '+err.message)}
+    input.value='';
+  };
+  reader.readAsText(file);
+}
+function clearAllData(){
+  confirm2('⚠️ This will delete ALL advisors and history permanently. Are you sure?',()=>{
+    saveAdvisors([]);saveUpdates([]);showToast('All data cleared');renderHome();
+  });
+}
+
+// ===================== INIT =====================
+document.addEventListener('DOMContentLoaded',()=>renderHome());
+</script>
+</body>
+</html>
