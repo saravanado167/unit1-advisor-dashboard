@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Unit-1 Advisor Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <style>
+    :root{--blue:#004aad;--blue2:#003a8c;--yellow:#ffc400;--bg:#f3f6ff;--card:#fff;--text:#10233f;--muted:#687386;--danger:#d93025;--green:#188038;--shadow:0 6px 18px rgba(0,0,0,.10)}
+    *{box-sizing:border-box} body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text);padding-bottom:84px} header{background:linear-gradient(135deg,var(--blue),#0067d9);color:#fff;padding:18px 16px;font-size:24px;font-weight:800;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:5} .lic{background:var(--yellow);color:#111;border-radius:20px;padding:7px 14px;font-size:15px}.page{display:none;padding:14px}.page.active{display:block}.card{background:var(--card);border-radius:20px;margin:12px 0;padding:16px;box-shadow:var(--shadow);border:1px solid #e2e7f4}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.stat{background:#eef4ff;border-radius:16px;padding:15px;text-align:center;font-weight:700}.stat b{font-size:23px;display:block;color:var(--blue)}button,.btn{border:0;border-radius:14px;padding:12px 14px;font-weight:800;font-size:15px;cursor:pointer;background:var(--blue);color:#fff;text-decoration:none;display:inline-block;text-align:center}button.yellow{background:var(--yellow);color:#111}button.red{background:var(--danger)}button.green{background:var(--green)}button.light{background:#eaf1ff;color:var(--blue)}.row{display:flex;gap:8px;flex-wrap:wrap}.row>*{flex:1 1 130px}input,select,textarea{width:100%;border:1px solid #c5ccda;border-radius:14px;padding:12px;font-size:15px;margin:7px 0;background:#fff}textarea{min-height:80px}.small{font-size:12px;color:var(--muted)}.title{font-size:24px;font-weight:900;margin:4px 0 12px}.advisor-card h3{margin:0 0 4px;font-size:20px}.meta{line-height:1.55;color:#26374f}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.actions.three{grid-template-columns:1fr 1fr 1fr}.progress{height:16px;background:#dfe6f5;border-radius:20px;overflow:hidden}.bar{height:100%;background:var(--blue);color:#fff;text-align:center;font-size:11px;line-height:16px;min-width:8%}nav{position:fixed;bottom:0;left:0;right:0;background:#fff;display:grid;grid-template-columns:repeat(6,1fr);gap:4px;padding:8px;box-shadow:0 -3px 15px rgba(0,0,0,.12);z-index:10}nav button{padding:9px 3px;border-radius:13px;background:#edf3ff;color:var(--blue);font-size:12px}nav button.active{background:var(--blue);color:#fff}.hidden{display:none!important}.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:flex-end;z-index:20}.modal.show{display:flex}.modal-box{background:#fff;border-radius:24px 24px 0 0;padding:18px;width:100%;max-height:92vh;overflow:auto}.img-preview{max-width:100%;border-radius:15px;border:1px solid #ddd;margin:10px 0}.pill{display:inline-block;background:#eef4ff;color:var(--blue);padding:6px 10px;border-radius:99px;font-size:12px;font-weight:800;margin:3px}.warn{background:#fff8d8;border-left:5px solid var(--yellow);padding:10px;border-radius:10px}.nowrap{white-space:nowrap}.report-item{border-bottom:1px solid #e8edf7;padding:10px 0}.searchbox{position:sticky;top:65px;background:var(--bg);z-index:4;padding:4px 0}@media(max-width:370px){header{font-size:20px}.grid{grid-template-columns:1fr}nav button{font-size:10px}.actions.three{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<header><span>Unit-1 Advisor Dashboard</span><span class="lic">LIC</span></header>
+
+<section id="home" class="page active">
+  <div class="grid">
+    <div class="stat">Total Advisors<b id="totalAdvisors">0</b></div>
+    <div class="stat">Total NOP<b id="totalNop">0</b></div>
+    <div class="stat">Total Premium<b id="totalPremium">₹0</b></div>
+    <div class="stat">Today Updates<b id="todayCount">0</b></div>
+    <div class="stat">Total History<b id="historyCount">0</b></div>
+    <div class="stat">Last Upload<b id="lastUploadDate">-</b></div>
+  </div>
+  <div class="card"><div class="title">Quick Actions</div><div class="row"><button onclick="openAdvisorModal()">Add Advisor</button><button class="yellow" onclick="document.getElementById('excelFile').click()">Import Excel</button><button onclick="showPage('today')">Today's Update</button><button class="light" onclick="showPage('monthly')">Monthly</button></div><input id="excelFile" class="hidden" type="file" accept=".xlsx,.xls" onchange="importExcel(event)"></div>
+  <div class="card"><div class="title">Top Performers</div><p id="topNopText">Top NOP: -</p><p id="topPremiumText">Top Premium: -</p></div>
+</section>
+
+<section id="advisors" class="page">
+  <div class="searchbox"><input id="advisorSearch" placeholder="Search by code, name, mobile" oninput="renderAdvisors()"></div>
+  <div class="row"><button onclick="openAdvisorModal()">+ Add Advisor</button><button class="yellow" onclick="document.getElementById('excelFile2').click()">Import</button><button class="green" onclick="exportAdvisorsExcel()">Export</button></div>
+  <input id="excelFile2" class="hidden" type="file" accept=".xlsx,.xls" onchange="importExcel(event)">
+  <div id="advisorList"></div>
+</section>
+
+<section id="today" class="page">
+  <div class="card"><div class="title">Today's Update</div><p class="small">Upload/capture image. OCR will try to read multiple advisors. You can edit before saving.</p><div class="row"><button onclick="document.getElementById('cameraInput').click()">Take Photo</button><button class="yellow" onclick="document.getElementById('galleryInput').click()">Upload Image</button></div><input id="cameraInput" class="hidden" type="file" accept="image/*" capture="environment" onchange="handleImage(event)"><input id="galleryInput" class="hidden" type="file" accept="image/*" onchange="handleImage(event)"><img id="preview" class="img-preview hidden"><div id="ocrStatus" class="small"></div><button id="runOcrBtn" class="green hidden" onclick="runOCR()">Run OCR</button></div>
+  <div id="ocrRows"></div>
+  <div id="savedWhatsApp"></div>
+</section>
+
+<section id="monthly" class="page">
+  <div class="card"><div class="title">Monthly Performance</div><div class="row"><button onclick="sortMonthly('nop')">Sort by NOP</button><button class="yellow" onclick="sortMonthly('premium')">Sort by Premium</button><button class="light" onclick="sortMonthly('percent')">Sort by %</button></div><p id="monthlyTop" class="small"></p></div>
+  <div id="monthlyList"></div>
+</section>
+
+<section id="reports" class="page">
+  <div class="card"><div class="title">Reports</div><div class="row"><button onclick="setReportRange('today')">Today</button><button class="yellow" onclick="setReportRange('week')">This Week</button><button class="light" onclick="setReportRange('month')">This Month</button><button class="green" onclick="setReportRange('all')">All</button></div><div class="row"><input type="date" id="filterDate" onchange="renderReports()"><input id="filterAdvisor" placeholder="Filter advisor/code" oninput="renderReports()"></div><button class="green" onclick="exportReportsExcel()">Export Reports Excel</button></div>
+  <div id="reportsList"></div>
+</section>
+
+<section id="settings" class="page">
+  <div class="card"><div class="title">Settings</div><button onclick="backupData()">Backup Data JSON</button><input id="restoreFile" class="hidden" type="file" accept=".json" onchange="restoreData(event)"><button class="yellow" onclick="document.getElementById('restoreFile').click()">Restore Data JSON</button><button class="red" onclick="clearAll()">Clear All Data</button><p class="small">Version 1B.1. Data is stored only in this browser.</p></div>
+</section>
+
+<nav>
+  <button class="active" onclick="showPage('home')">Home</button><button onclick="showPage('advisors')">Advisors</button><button onclick="showPage('today')">Today</button><button onclick="showPage('monthly')">Monthly</button><button onclick="showPage('reports')">Reports</button><button onclick="showPage('settings')">Settings</button>
+</nav>
+
+<div id="advisorModal" class="modal"><div class="modal-box"><div class="title" id="advisorModalTitle">Add Advisor</div><input id="mCode" placeholder="Agency Code"><input id="mName" placeholder="Advisor Name"><input id="mMobile" placeholder="Mobile Number"><label><input type="checkbox" id="sameWhats" checked onchange="toggleWhats()" style="width:auto"> WhatsApp same as Mobile</label><input id="mWhats" class="hidden" placeholder="WhatsApp Number"><div class="row"><input id="mNopTarget" type="number" placeholder="NOP Target"><input id="mPremiumTarget" type="number" placeholder="Premium Target"></div><div class="row"><input id="mCurNop" type="number" placeholder="Current NOP"><input id="mCurPremium" type="number" placeholder="Current Premium"></div><div class="row"><button onclick="saveAdvisor()">Save</button><button class="red" onclick="closeAdvisorModal()">Cancel</button></div></div></div>
+<div id="historyModal" class="modal"></div>
+
+<script>
+const KEY='unit1_advisor_dashboard_v2';
+let db=JSON.parse(localStorage.getItem(KEY)||'{"advisors":[],"updates":[]}');
+let editCode=null, monthlySort='nop', selectedImage=null, ocrExtracted=[];
+const fmt=n=>'₹'+(Number(n||0).toLocaleString('en-IN'));
+function persist(){localStorage.setItem(KEY,JSON.stringify(db));refreshAll();}
+function norm(v){return String(v??'').trim();}
+function num(v){return Number(String(v??'0').replace(/[^0-9.]/g,''))||0;}
+function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active');document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));[...document.querySelectorAll('nav button')].find(b=>b.textContent.toLowerCase().startsWith(id==='today'?'today':id.slice(0,5)))?.classList.add('active');if(id==='monthly')renderMonthly();if(id==='reports')renderReports();if(id==='advisors')renderAdvisors();}
+function refreshAll(){renderHome();renderAdvisors();renderMonthly();renderReports();}
+function renderHome(){totalAdvisors.textContent=db.advisors.length;totalNop.textContent=db.advisors.reduce((s,a)=>s+num(a.currentNop),0);totalPremium.textContent=fmt(db.advisors.reduce((s,a)=>s+num(a.currentPremium),0));let today=new Date().toISOString().slice(0,10);todayCount.textContent=db.updates.filter(u=>u.date===today).length;if(typeof historyCount!=='undefined')historyCount.textContent=db.updates.length;if(typeof lastUploadDate!=='undefined')lastUploadDate.textContent=db.updates.length?db.updates[db.updates.length-1].date:'-';let topN=[...db.advisors].sort((a,b)=>num(b.currentNop)-num(a.currentNop))[0];let topP=[...db.advisors].sort((a,b)=>num(b.currentPremium)-num(a.currentPremium))[0];topNopText.textContent='Top NOP: '+(topN?`${topN.name} (${topN.currentNop||0})`:'-');topPremiumText.textContent='Top Premium: '+(topP?`${topP.name} (${fmt(topP.currentPremium)})`:'-');}
+function toggleWhats(){mWhats.classList.toggle('hidden',sameWhats.checked);if(sameWhats.checked)mWhats.value=mMobile.value;}
+function openAdvisorModal(code=null){editCode=code;advisorModal.classList.add('show');advisorModalTitle.textContent=code?'Modify Advisor':'Add Advisor';let a=db.advisors.find(x=>x.code===code)||{};mCode.value=a.code||'';mName.value=a.name||'';mMobile.value=a.mobile||'';mWhats.value=a.whatsapp||a.mobile||'';sameWhats.checked=!a.whatsapp||a.whatsapp===a.mobile;toggleWhats();mNopTarget.value=a.nopTarget||'';mPremiumTarget.value=a.premiumTarget||'';mCurNop.value=a.currentNop||'';mCurPremium.value=a.currentPremium||'';}
+function closeAdvisorModal(){advisorModal.classList.remove('show');editCode=null;}
+function saveAdvisor(){let code=norm(mCode.value);if(!code||!norm(mName.value)){alert('Agency code and name required');return;}let whatsapp=sameWhats.checked?norm(mMobile.value):norm(mWhats.value);let advisor={code,name:norm(mName.value),mobile:norm(mMobile.value),whatsapp:whatsapp||norm(mMobile.value),nopTarget:num(mNopTarget.value),premiumTarget:num(mPremiumTarget.value),currentNop:num(mCurNop.value),currentPremium:num(mCurPremium.value)};let i=db.advisors.findIndex(a=>a.code===editCode||a.code===code);if(i>=0)db.advisors[i]={...db.advisors[i],...advisor};else db.advisors.push(advisor);closeAdvisorModal();persist();}
+function deleteAdvisor(code){let a=db.advisors.find(x=>x.code===code);if(confirm('Delete advisor '+(a?.name||code)+'?')){db.advisors=db.advisors.filter(x=>x.code!==code);persist();}}
+function lastUpdatedFor(code){let u=[...db.updates].reverse().find(x=>x.code===code);return u?`${u.date} ${u.time||''}`:'No update yet';}
+function openHistory(code){let a=db.advisors.find(x=>x.code===code);let list=db.updates.filter(u=>u.code===code).slice().reverse();let html=`<div class="modal-box"><div class="title">History - ${a?.name||code}</div>`;if(!list.length)html+='<p class="small">No history found.</p>';list.forEach(u=>{html+=`<div class="report-item"><b>${u.date} ${u.time||''}</b><br>NOP +${u.nop}<br>Premium +${fmt(u.premium)}</div>`;});html+='<button class="red" onclick="historyModal.classList.remove(\'show\')">Close</button></div>';historyModal.innerHTML=html;historyModal.classList.add('show');}
+function renderAdvisors(){let q=norm(advisorSearch?.value).toLowerCase();advisorList.innerHTML='';let list=db.advisors.filter(a=>(a.code+a.name+a.mobile).toLowerCase().includes(q));if(!list.length){advisorList.innerHTML='<div class="card small">No advisors found.</div>';return;}list.forEach(a=>{advisorList.innerHTML+=`<div class="card advisor-card"><h3>${a.name}</h3><div class="meta"><b>Code:</b> ${a.code}<br><b>Mobile:</b> <a href="tel:${a.mobile}">${a.mobile}</a><br><b>WhatsApp:</b> ${a.whatsapp||a.mobile}<br><b>NOP:</b> ${a.currentNop||0} / ${a.nopTarget||0}<br><b>Premium:</b> ${fmt(a.currentPremium)} / ${fmt(a.premiumTarget)}<br><b>Last Updated:</b> ${lastUpdatedFor(a.code)}</div><div class="actions three"><button onclick="openAdvisorModal('${a.code}')">Modify</button><button class="light" onclick="openHistory('${a.code}')">History</button><button class="red" onclick="deleteAdvisor('${a.code}')">Delete</button></div><div class="actions"><a class="btn green" href="https://wa.me/91${a.whatsapp||a.mobile}" target="_blank">WhatsApp</a></div></div>`;});}
+function importExcel(e){let file=e.target.files[0];if(!file)return;let r=new FileReader();r.onload=ev=>{let wb=XLSX.read(ev.target.result,{type:'binary'});let ws=wb.Sheets[wb.SheetNames[0]];let rows=XLSX.utils.sheet_to_json(ws,{defval:''});let count=0;rows.forEach(row=>{let code=norm(row['Agency Code']||row['Code']||row['agency code']);if(!code)return;let adv={code,name:norm(row['Advisor Name']||row['Name']),mobile:norm(row['Mobile Number']||row['Mobile']),whatsapp:norm(row['WhatsApp Number']||row['Whatsapp Number']||row['WhatsApp'])||norm(row['Mobile Number']||row['Mobile']),nopTarget:num(row['NOP Target']),premiumTarget:num(row['Premium Target']),currentNop:0,currentPremium:0};let i=db.advisors.findIndex(a=>a.code===code);if(i>=0)db.advisors[i]={...db.advisors[i],...adv,currentNop:db.advisors[i].currentNop||0,currentPremium:db.advisors[i].currentPremium||0};else db.advisors.push(adv);count++;});persist();alert(count+' advisors imported/updated');e.target.value='';};r.readAsBinaryString(file);}
+function exportAdvisorsExcel(){let data=db.advisors.map(a=>({'Agency Code':a.code,'Advisor Name':a.name,'Mobile Number':a.mobile,'WhatsApp Number':a.whatsapp,'NOP Target':a.nopTarget,'Premium Target':a.premiumTarget,'Current NOP':a.currentNop,'Current Premium':a.currentPremium}));downloadXlsx(data,'advisors.xlsx');}
+function downloadXlsx(data,name){let ws=XLSX.utils.json_to_sheet(data);let wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'Data');XLSX.writeFile(wb,name);}
+function handleImage(e){let f=e.target.files[0];if(!f)return;selectedImage=f;preview.src=URL.createObjectURL(f);preview.classList.remove('hidden');runOcrBtn.classList.remove('hidden');ocrStatus.textContent='Image ready. Click Run OCR.';ocrRows.innerHTML='';}
+async function runOCR(){if(!selectedImage)return;ocrStatus.textContent='OCR running... please wait';try{let res=await Tesseract.recognize(selectedImage,'eng',{logger:m=>{if(m.status)ocrStatus.textContent=m.status+' '+Math.round((m.progress||0)*100)+'%';}});let text=res.data.text;ocrExtracted=parseOCR(text);if(!ocrExtracted.length){ocrExtracted=[{code:'',name:'',nop:0,premium:0,unmatched:true}];alert('OCR could not detect clearly. Enter manually.');}renderOcrRows();ocrStatus.textContent='OCR completed. Verify before saving.';}catch(err){ocrStatus.textContent='OCR failed. Enter manually.';ocrExtracted=[{code:'',name:'',nop:0,premium:0,unmatched:true}];renderOcrRows();}}
+function parseOCR(text){let lines=text.split(/\n+/).map(x=>x.trim()).filter(Boolean);let out=[];lines.forEach(line=>{let code=(line.match(/\b\d{6,8}\b/)||[])[0];if(!code)return;let after=line.replace(code,' ');let nums=[...after.matchAll(/\b\d+(?:\.\d+)?\b/g)].map(m=>m[0]);let nop=nums.length?num(nums[0]):0;let premium=nums.length>1?num(nums[1]):0;let adv=db.advisors.find(a=>a.code===code);out.push({code,name:adv?.name||'',nop,premium,unmatched:!adv});});return out;}
+function advisorOptions(selected){return '<option value="">Select Advisor</option>'+db.advisors.map(a=>`<option value="${a.code}" ${a.code===selected?'selected':''}>${a.code} - ${a.name}</option>`).join('');}
+function renderOcrRows(){ocrRows.innerHTML='<div class="card"><div class="title">Extracted Updates</div><div class="row"><button onclick="addOcrRow()">+ Add Row</button><button class="green" onclick="saveOcrAll()">Save All</button></div><p class="small">Check each row. If unmatched, select advisor manually.</p></div>';ocrExtracted.forEach((r,i)=>{let adv=db.advisors.find(a=>a.code===norm(r.code));ocrRows.innerHTML+=`<div class="card"><span class="pill">${adv?'Matched':'Unmatched'}</span><select onchange="ocrExtracted[${i}].code=this.value; autoFillOcr(${i}); renderOcrRows()">${advisorOptions(r.code)}</select><input value="${r.code||''}" placeholder="Agency Code" onchange="ocrExtracted[${i}].code=this.value; autoFillOcr(${i}); renderOcrRows()"><input value="${r.name||adv?.name||''}" placeholder="Advisor Name" onchange="ocrExtracted[${i}].name=this.value"><div class="row"><input type="number" value="${r.nop||0}" placeholder="NOP" onchange="ocrExtracted[${i}].nop=num(this.value)"><input type="number" value="${r.premium||0}" placeholder="Premium" onchange="ocrExtracted[${i}].premium=num(this.value)"></div><div class="actions"><button class="light" onclick="autoFillOcr(${i});renderOcrRows()">Modify/Match</button><button class="red" onclick="ocrExtracted.splice(${i},1);renderOcrRows()">Delete Row</button></div></div>`;});}
+function autoFillOcr(i){let adv=db.advisors.find(a=>a.code===norm(ocrExtracted[i].code));if(adv){ocrExtracted[i].name=adv.name;ocrExtracted[i].unmatched=false;}else ocrExtracted[i].unmatched=true;}
+function addOcrRow(){ocrExtracted.push({code:'',name:'',nop:0,premium:0,unmatched:true});renderOcrRows();}
+function saveOcrAll(){let saved=[];let today=new Date().toISOString().slice(0,10);ocrExtracted.forEach(r=>{let adv=db.advisors.find(a=>a.code===norm(r.code));if(!adv)return;adv.currentNop=num(adv.currentNop)+num(r.nop);adv.currentPremium=num(adv.currentPremium)+num(r.premium);let up={date:today,time:new Date().toLocaleTimeString(),code:adv.code,name:adv.name,nop:num(r.nop),premium:num(r.premium),whatsapp:adv.whatsapp||adv.mobile,currentNop:adv.currentNop,currentPremium:adv.currentPremium,nopTarget:adv.nopTarget,premiumTarget:adv.premiumTarget};db.updates.push(up);saved.push(up);});persist();renderWhatsApp(saved);alert(saved.length+' updates saved');}
+function renderWhatsApp(saved){savedWhatsApp.innerHTML='<div class="card"><div class="title">WhatsApp Messages</div></div>';saved.forEach(u=>{let msg=`Congratulations ${u.name}!
+
+Today's Achievement
+Policies Completed Today: ${u.nop}
+Premium Today: ${fmt(u.premium)}
+
+Overall Achievement
+Total Policies: ${u.currentNop} / ${u.nopTarget}
+Total Premium: ${fmt(u.currentPremium)} / ${fmt(u.premiumTarget)}
+
+Keep up the excellent work.
+
+Best Wishes`;savedWhatsApp.innerHTML+=`<div class="card"><b>${u.name}</b><p>Today: NOP ${u.nop}, Premium ${fmt(u.premium)}</p><p>Overall: ${u.currentNop}/${u.nopTarget} policies, ${fmt(u.currentPremium)}/${fmt(u.premiumTarget)}</p><a class="btn green" target="_blank" href="https://wa.me/91${u.whatsapp}?text=${encodeURIComponent(msg)}">Open WhatsApp</a></div>`;});}
+function sortMonthly(by){monthlySort=by;renderMonthly();}
+function renderMonthly(){let list=[...db.advisors];list.sort((a,b)=>monthlySort==='premium'?num(b.currentPremium)-num(a.currentPremium):monthlySort==='percent'?percent(b)-percent(a):num(b.currentNop)-num(a.currentNop));monthlyTop.textContent=list[0]?`Sorting by ${monthlySort.toUpperCase()}. Top: ${list[0].name}`:'No advisors';monthlyList.innerHTML='';list.forEach((a,i)=>{let p=percent(a);monthlyList.innerHTML+=`<div class="card advisor-card"><h3>#${i+1} ${a.name}</h3><div class="meta"><b>Code:</b> ${a.code}<br><b>NOP:</b> ${a.currentNop||0} / ${a.nopTarget||0}<br><b>Premium:</b> ${fmt(a.currentPremium)} / ${fmt(a.premiumTarget)}<br><b>Achievement:</b> ${p}%</div><div class="progress"><div class="bar" style="width:${Math.min(100,p)}%">${p}%</div></div></div>`;});}
+function percent(a){let n=a.nopTarget?num(a.currentNop)/num(a.nopTarget):0;let p=a.premiumTarget?num(a.currentPremium)/num(a.premiumTarget):0;let parts=[];if(a.nopTarget)parts.push(n);if(a.premiumTarget)parts.push(p);return parts.length?Math.round((parts.reduce((x,y)=>x+y,0)/parts.length)*100):0;}
+let reportRange='all';
+function setReportRange(range){reportRange=range;if(range!=='today')filterDate.value='';renderReports();}
+function inRange(dateStr){if(reportRange==='all')return true;let d=new Date(dateStr+'T00:00:00');let now=new Date();let today=new Date(now.getFullYear(),now.getMonth(),now.getDate());if(reportRange==='today')return dateStr===new Date().toISOString().slice(0,10);if(reportRange==='week'){let start=new Date(today);start.setDate(today.getDate()-today.getDay());return d>=start&&d<=today;}if(reportRange==='month')return d.getMonth()===today.getMonth()&&d.getFullYear()===today.getFullYear();return true;}
+function renderReports(){let d=filterDate.value, q=norm(filterAdvisor.value).toLowerCase();let list=db.updates.filter(u=>(!d||u.date===d)&&inRange(u.date)&&(!q||(u.code+u.name).toLowerCase().includes(q)));reportsList.innerHTML='';if(!list.length){reportsList.innerHTML='<div class="card small">No reports found.</div>';return;}let totalN=list.reduce((s,u)=>s+num(u.nop),0), totalP=list.reduce((s,u)=>s+num(u.premium),0);reportsList.innerHTML=`<div class="card"><b>Report Summary</b><br>Total Updates: ${list.length}<br>Total NOP: ${totalN}<br>Total Premium: ${fmt(totalP)}</div>`;list.slice().reverse().forEach(u=>{reportsList.innerHTML+=`<div class="card report-item"><b>${u.name}</b><br>Code: ${u.code}<br>Date: ${u.date} ${u.time}<br>NOP: ${u.nop}<br>Premium: ${fmt(u.premium)}</div>`;});}
+function exportReportsExcel(){downloadXlsx(db.updates.map(u=>({Date:u.date,Time:u.time,'Agency Code':u.code,'Advisor Name':u.name,NOP:u.nop,Premium:u.premium})),'reports.xlsx');}
+function backupData(){let blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});let a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='unit1_backup.json';a.click();}
+function restoreData(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=ev=>{try{db=JSON.parse(ev.target.result);persist();alert('Restored');}catch{alert('Invalid file');}};r.readAsText(f);}
+function clearAll(){if(confirm('Clear all advisors and updates?')){db={advisors:[],updates:[]};persist();}}
+refreshAll();
+</script>
+</body>
+</html>
